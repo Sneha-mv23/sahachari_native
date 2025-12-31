@@ -9,10 +9,12 @@ import {
   Platform,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../constants/Colors';
+import { api } from '../../services/api';
 
 export default function DeliverySignup() {
   const router = useRouter();
@@ -21,6 +23,7 @@ export default function DeliverySignup() {
   const [password, setPassword] = useState('');
   const [pincodes, setPincodes] = useState<string[]>([]);
   const [currentPincode, setCurrentPincode] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const addPincode = () => {
     if (currentPincode && currentPincode.length === 6) {
@@ -47,23 +50,32 @@ export default function DeliverySignup() {
       return;
     }
 
-    // Save user data
-    const userData = {
-      name,
-      email,
-      password,
-      pincodes,
-      totalDeliveries: 0,
-      totalEarnings: 0,
-    };
+    setLoading(true);
+    try {
+      // Call API
+      const user = await api.signup({
+        name,
+        email,
+        password,
+        pincodes,
+      });
 
-    await AsyncStorage.setItem('deliveryUser', JSON.stringify(userData));
-    Alert.alert('Success', 'Account created successfully!', [
-      {
-        text: 'OK',
-        onPress: () => router.replace('/delivery'),
-      },
-    ]);
+      // Save user data and mark as logged in
+      await AsyncStorage.setItem('deliveryUser', JSON.stringify(user));
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+
+      Alert.alert('Success', 'Account created successfully!', [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/delivery/(tabs)'),
+        },
+      ]);
+    } catch (error) {
+      console.error('Signup error:', error);
+      Alert.alert('Error', 'Failed to create account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,7 +84,7 @@ export default function DeliverySignup() {
       style={styles.container}
     >
       <View style={styles.header}>
-        <TouchableOpacity style={styles.switchButton}>
+        <TouchableOpacity style={styles.switchButton} disabled={loading}>
           <Text style={styles.switchButtonText}>Switch App</Text>
         </TouchableOpacity>
       </View>
@@ -86,6 +98,7 @@ export default function DeliverySignup() {
           <TouchableOpacity
             style={styles.tab}
             onPress={() => router.back()}
+            disabled={loading}
           >
             <Text style={styles.tabText}>Login</Text>
           </TouchableOpacity>
@@ -101,7 +114,9 @@ export default function DeliverySignup() {
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder=""
+            placeholder="Enter your full name"
+            placeholderTextColor="#BDBDBD"
+            editable={!loading}
           />
 
           <Text style={styles.label}>Email</Text>
@@ -109,9 +124,11 @@ export default function DeliverySignup() {
             style={styles.input}
             value={email}
             onChangeText={setEmail}
-            placeholder=""
+            placeholder="you@example.com"
+            placeholderTextColor="#BDBDBD"
             keyboardType="email-address"
             autoCapitalize="none"
+            editable={!loading}
           />
 
           <Text style={styles.label}>Password</Text>
@@ -119,8 +136,10 @@ export default function DeliverySignup() {
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder=""
+            placeholder="Create a strong password"
+            placeholderTextColor="#BDBDBD"
             secureTextEntry
+            editable={!loading}
           />
 
           <Text style={styles.label}>Serviceable Pincodes</Text>
@@ -130,10 +149,16 @@ export default function DeliverySignup() {
               value={currentPincode}
               onChangeText={setCurrentPincode}
               placeholder="Enter pincode"
+              placeholderTextColor="#BDBDBD"
               keyboardType="number-pad"
               maxLength={6}
+              editable={!loading}
             />
-            <TouchableOpacity style={styles.addButton} onPress={addPincode}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={addPincode}
+              disabled={loading}
+            >
               <Text style={styles.addButtonText}>+ Add</Text>
             </TouchableOpacity>
           </View>
@@ -145,6 +170,7 @@ export default function DeliverySignup() {
                 key={index}
                 style={styles.pincodeChip}
                 onPress={() => removePincode(index)}
+                disabled={loading}
               >
                 <Text style={styles.pincodeChipText}>{pincode}</Text>
                 <Text style={styles.removeText}> ×</Text>
@@ -152,8 +178,16 @@ export default function DeliverySignup() {
             ))}
           </View>
 
-          <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
-            <Text style={styles.signupButtonText}>Signup</Text>
+          <TouchableOpacity
+            style={styles.signupButton}
+            onPress={handleSignup}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={Colors.white} size="small" />
+            ) : (
+              <Text style={styles.signupButtonText}>Signup</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

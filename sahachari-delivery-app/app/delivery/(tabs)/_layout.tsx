@@ -9,29 +9,25 @@ export default function DeliveryTabsLayout() {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.text.secondary,
         tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopWidth: 1,
-          borderTopColor: Colors.border,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
+     backgroundColor: Colors.white,
+  borderTopWidth: 1,
+  borderTopColor: Colors.border,
+},
+
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
         },
         headerShown: false,
       }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Available',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
-          ),
-        }}
-      />
+    > 
+    <Tabs.Screen
+  name="index"
+  options={{
+    href: null,   
+  }}
+/>
+
       <Tabs.Screen
         name="history"
         options={{

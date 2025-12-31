@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,18 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../../constants/Colors';
+// import { api, getDeliveryId } from '../../../services/api'; // TODO: Uncomment for API
 
 interface UserData {
+  _id: string;
   name: string;
   email: string;
   pincodes: string[];
@@ -20,27 +25,49 @@ interface UserData {
   totalEarnings: number;
 }
 
+// ========== 🔥 DUMMY DATA - REMOVE DURING API INTEGRATION 🔥 ==========
+const DUMMY_USER_DATA: UserData = {
+  _id: 'USER123ABC',
+  name: 'Demo Driver',
+  email: 'driver@sahachari.com',
+  pincodes: ['682001', '682002', '682003', '682011'],
+  totalDeliveries: 127,
+  totalEarnings: 6350,
+};
+// ========== END DUMMY DATA ==========
+
 export default function Profile() {
   const router = useRouter();
-  const [userData, setUserData] = useState<UserData>({
-    name: 'Demo Driver',
-    email: 'snehamv23@gmail.com',
-    pincodes: ['682001', '682002'],
-    totalDeliveries: 127,
-    totalEarnings: 6350,
-  });
+  
+  // TODO: During API integration, initialize as null: useState<UserData | null>(null)
+  const [userData, setUserData] = useState<UserData | null>(DUMMY_USER_DATA);
+  const [loading, setLoading] = useState(false); // Changed to false for dummy data
 
   useEffect(() => {
-    loadUserData();
+    // TODO: Uncomment for API integration
+    // loadProfile();
   }, []);
 
-  const loadUserData = async () => {
-    const stored = await AsyncStorage.getItem('deliveryUser');
-    if (stored) {
-      const user = JSON.parse(stored);
-      setUserData(user);
+  // TODO: Uncomment for API integration
+  /*
+  const loadProfile = async () => {
+    try {
+      const deliveryId = await getDeliveryId();
+      if (!deliveryId) {
+        Alert.alert('Error', 'User not logged in');
+        return;
+      }
+
+      const profile = await api.getProfile(deliveryId);
+      setUserData(profile);
+    } catch (error) {
+      console.error('Profile load error:', error);
+      Alert.alert('Error', 'Failed to load profile');
+    } finally {
+      setLoading(false);
     }
   };
+  */
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -49,232 +76,318 @@ export default function Profile() {
         text: 'Logout',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.removeItem('isLoggedIn');
+          await AsyncStorage.multiRemove(['deliveryUser', 'isLoggedIn']);
           router.replace('/delivery');
         },
       },
     ]);
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons name="menu" size={24} color={Colors.text.primary} />
-        <Text style={styles.title}>Profile</Text>
-        <TouchableOpacity style={styles.switchButton}>
-          <Text style={styles.switchButtonText}>Switch App</Text>
-        </TouchableOpacity>
-      </View>
+  if (loading || !userData) {
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]} edges={['top']}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </SafeAreaView>
+    );
+  }
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Avatar */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={48} color={Colors.white} />
-          </View>
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={['#FF6B35', '#FF8E53']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                  <Ionicons name="arrow-back" size={24} color="#FFF" />
+                </TouchableOpacity>
+        <Text style={styles.title}>Profile</Text>
+        <TouchableOpacity style={styles.switchButton} onPress={() => router.replace('/')}>
+          <Ionicons name="apps" size={14} color="#FFF" />
+          <Text style={styles.switchButtonText}>Switch</Text>
+        </TouchableOpacity>
+      </LinearGradient>
+
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Avatar Section */}
+        <View style={styles.avatarCard}>
+          <LinearGradient
+            colors={['#FF6B35', '#FF8E53']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatar}
+          >
+            <Ionicons name="person" size={48} color="#FFF" />
+          </LinearGradient>
           <Text style={styles.name}>{userData.name}</Text>
-          <Text style={styles.email}>{userData.email}</Text>
+          <View style={styles.emailContainer}>
+            <Ionicons name="mail-outline" size={16} color={Colors.text.secondary} />
+            <Text style={styles.email}>{userData.email}</Text>
+          </View>
+        </View>
+
+        {/* Stats Card */}
+        <View style={styles.statsCard}>
+          <LinearGradient
+            colors={['#FFE5D9', '#FFF3E0']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.statsGradient}
+          >
+            <View style={styles.statsHeader}>
+              <Ionicons name="trending-up" size={22} color={Colors.primary} />
+              <Text style={styles.statsTitle}>Performance Stats</Text>
+            </View>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="bicycle" size={24} color={Colors.primary} />
+                </View>
+                <Text style={styles.statValue}>{userData.totalDeliveries}</Text>
+                <Text style={styles.statLabel}>Total Deliveries</Text>
+              </View>
+
+              <View style={styles.statDivider} />
+
+              <View style={styles.statItem}>
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="wallet" size={24} color={Colors.primary} />
+                </View>
+                <Text style={styles.statValue}>₹{userData.totalEarnings}</Text>
+                <Text style={styles.statLabel}>Total Earnings</Text>
+              </View>
+            </View>
+          </LinearGradient>
         </View>
 
         {/* Serviceable Areas */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Serviceable Areas</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="location" size={20} color={Colors.primary} />
+            <Text style={styles.sectionTitle}>Serviceable Areas</Text>
+          </View>
           <View style={styles.pincodeList}>
-            {userData.pincodes.map((pincode, index) => (
-              <View key={index} style={styles.pincodeChip}>
-                <Text style={styles.pincodeText}>{pincode}</Text>
-              </View>
-            ))}
+            {userData.pincodes.length > 0 ? (
+              userData.pincodes.map((pincode, index) => (
+                <View key={index} style={styles.pincodeChip}>
+                  <Ionicons name="location-outline" size={14} color={Colors.primary} />
+                  <Text style={styles.pincodeText}>{pincode}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No pincodes added</Text>
+            )}
           </View>
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsCard}>
-          <View style={styles.statsHeader}>
-            <Ionicons name="trending-up" size={20} color={Colors.primary} />
-            <Text style={styles.statsTitle}>Stats</Text>
-          </View>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Total Deliveries</Text>
-              <Text style={styles.statValue}>{userData.totalDeliveries}</Text>
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity style={styles.actionButton}>
+            <View style={styles.actionIconCircle}>
+              <Ionicons name="create-outline" size={20} color={Colors.primary} />
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Total Earnings</Text>
-              <Text style={styles.statValue}>₹{userData.totalEarnings}</Text>
-            </View>
-          </View>
+            <Text style={styles.actionButtonText}>Edit Profile</Text>
+            <Ionicons name="chevron-forward" size={20} color={Colors.text.light} />
+          </TouchableOpacity>
+ 
         </View>
 
-        {/* Edit Profile */}
-        <TouchableOpacity style={styles.editButton}>
-          <Text style={styles.editButtonText}>Edit Profile</Text>
-        </TouchableOpacity>
-
-        {/* Logout */}
+        {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#D32F2F" />
-          <Text style={styles.logoutText}>Logout</Text>
+          <LinearGradient
+            colors={['#FFEBEE', '#FFCDD2']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.logoutGradient}
+          >
+            <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </LinearGradient>
         </TouchableOpacity>
+
+        <Text style={styles.versionText}>Version 1.0.0</Text>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  loadingContainer: { justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 14, color: Colors.text.secondary },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 50,
-    backgroundColor: Colors.white,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.text.primary,
-    flex: 1,
-    marginLeft: 16,
-  },
+  backButton: { padding: 4, marginRight: 12 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#FFF', flex: 1, marginLeft: 16 },
   switchButton: {
-    backgroundColor: '#9E9E9E',
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
   },
-  switchButtonText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  content: {
-    flex: 1,
-  },
-  avatarSection: {
-    backgroundColor: Colors.white,
+  switchButtonText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
+  content: { flex: 1 },
+  contentContainer: { padding: 16, paddingBottom: 100 },
+  avatarCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
     alignItems: 'center',
-    padding: 32,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  name: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: Colors.text.primary,
-    marginBottom: 4,
+  name: { fontSize: 24, fontWeight: 'bold', color: Colors.text.primary, marginBottom: 8 },
+  emailContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  email: { fontSize: 14, color: Colors.text.secondary },
+  statsCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  email: {
-    fontSize: 14,
-    color: Colors.text.secondary,
+  statsGradient: { padding: 20 },
+  statsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
+  statsTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.primary },
+  statsRow: { flexDirection: 'row', alignItems: 'center' },
+  statItem: { flex: 1, alignItems: 'center' },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statValue: { fontSize: 24, fontWeight: 'bold', color: Colors.primary, marginBottom: 4 },
+  statLabel: { fontSize: 12, color: Colors.text.secondary },
+  statDivider: {
+    width: 1,
+    height: 60,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    marginHorizontal: 16,
   },
   section: {
-    backgroundColor: Colors.white,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
     padding: 20,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text.primary,
-    marginBottom: 12,
-  },
-  pincodeList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: Colors.text.primary },
+  pincodeList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pincodeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: Colors.earned,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  pincodeText: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  statsCard: {
-    backgroundColor: Colors.earned,
-    margin: 16,
-    padding: 20,
-    borderRadius: 12,
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  pincodeText: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
+  actionsContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 12,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  statsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.primary,
-  },
-  statsRow: {
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  statItem: {
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: Colors.text.secondary,
+    padding: 12,
+    borderRadius: 12,
     marginBottom: 4,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.primary,
-  },
-  statDivider: {
-    width: 1,
+  actionIconCircle: {
+    width: 40,
     height: 40,
-    backgroundColor: Colors.border,
-    marginHorizontal: 16,
-  },
-  editButton: {
-    backgroundColor: Colors.white,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFE5D9',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+  actionButtonText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
     color: Colors.text.primary,
   },
   logoutButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#D32F2F',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoutGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#FFEBEE',
-    marginHorizontal: 16,
-    marginBottom: 32,
-    padding: 16,
-    borderRadius: 8,
+    gap: 10,
+    paddingVertical: 16,
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#D32F2F',
+  logoutText: { fontSize: 16, fontWeight: 'bold', color: '#D32F2F' },
+  versionText: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: Colors.text.light,
+    marginBottom: 16,
   },
+  emptyText: { fontSize: 14, color: Colors.text.secondary },
 });
