@@ -8,22 +8,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Colors } from '../../constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { api } from '../../services/api';
 
 export default function DeliveryLogin() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -31,22 +27,19 @@ export default function DeliveryLogin() {
       return;
     }
 
-    setLoading(true);
-    try {
-      // Call API
-      const user = await api.login({ email, password });
-      
-      // Save user data to AsyncStorage
-      await AsyncStorage.setItem('deliveryUser', JSON.stringify(user));
+    const savedUser = await AsyncStorage.getItem('deliveryUser');
+    if (!savedUser) {
+      Alert.alert('Error', 'No account found. Please signup first.');
+      return;
+    }
+
+    const user = JSON.parse(savedUser);
+
+    if (user.email === email && user.password === password) {
       await AsyncStorage.setItem('isLoggedIn', 'true');
-      
-      // Navigate to tabs
       router.replace('/delivery/(tabs)');
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Error', 'Invalid credentials or server error');
-    } finally {
-      setLoading(false);
+    } else {
+      Alert.alert('Error', 'Invalid credentials');
     }
   };
 
@@ -55,154 +48,91 @@ export default function DeliveryLogin() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Gradient Header */}
-      <LinearGradient
-        colors={['#FF6B35', '#FF8E53', '#FFA07A']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientHeader}
-      >
-        <TouchableOpacity style={styles.switchButton}>
-          <Ionicons name="apps" size={16} color="#FFF" />
-          <Text style={styles.switchButtonText}>Switch App</Text>
+      {/* 🔶 TOP GRADIENT */}
+      <LinearGradient colors={['#FF8A65', '#FF7043']} style={styles.header}>
+
+        {/* 🔁 SWITCH APP BUTTON */}
+        <TouchableOpacity
+          style={styles.switchButton}
+          onPress={() => router.replace('/')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="swap-horizontal-outline" size={18} color="#FFF" />
+          <Text style={styles.switchText}>Switch App</Text>
         </TouchableOpacity>
 
-        <View style={styles.headerContent}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="bicycle" size={48} color="#FFF" />
-          </View>
-          <Text style={styles.title}>Delivery Partner</Text>
-          <Text style={styles.subtitle}>Start earning with deliveries</Text>
-        </View>
+        <Ionicons name="bicycle" size={56} color="#FFF" />
+        <Text style={styles.headerTitle}>Delivery Partner</Text>
+        <Text style={styles.headerSubtitle}>Start earning with deliveries</Text>
       </LinearGradient>
 
-      {/* White Card */}
-      <View style={styles.card}>
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity style={[styles.tab, styles.activeTab]}>
-            <Text style={[styles.tabText, styles.activeTabText]}>Login</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.tab}
-            onPress={() => router.push('/delivery/signup')}
-          >
-            <Text style={styles.tabText}>Signup</Text>
-          </TouchableOpacity>
-        </View>
+      {/* CONTENT */}
+      <View style={styles.content}>
+        <View style={styles.card}>
 
-        {/* Login Form */}
-        <View style={styles.form}>
-          {/* Email Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.label}>Email Address</Text>
-            <View
-              style={[
-                styles.inputContainer,
-                focusedInput === 'email' && styles.inputContainerFocused,
-              ]}
-            >
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color={focusedInput === 'email' ? Colors.primary : '#9E9E9E'}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor="#BDBDBD"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                onFocus={() => setFocusedInput('email')}
-                onBlur={() => setFocusedInput(null)}
-                editable={!loading}
-              />
-            </View>
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.label}>Password</Text>
-            <View
-              style={[
-                styles.inputContainer,
-                focusedInput === 'password' && styles.inputContainerFocused,
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={focusedInput === 'password' ? Colors.primary : '#9E9E9E'}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter your password"
-                placeholderTextColor="#BDBDBD"
-                secureTextEntry={!showPassword}
-                onFocus={() => setFocusedInput('password')}
-                onBlur={() => setFocusedInput(null)}
-                editable={!loading}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
-                disabled={loading}
-              >
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color="#9E9E9E"
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Forgot Password */}
-          <TouchableOpacity style={styles.forgotPassword} disabled={loading}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
-
-          {/* Login Button */}
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={handleLogin}
-            activeOpacity={0.8}
-            disabled={loading}
-          >
-            <LinearGradient
-              colors={['#FF6B35', '#FF8E53']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.gradientButton}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFF" size="small" />
-              ) : (
-                <>
-                  <Text style={styles.loginButtonText}>Login</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#FFF" />
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Signup Link */}
-          <View style={styles.signupLink}>
-            <Text style={styles.signupLinkText}>Don't have an account? </Text>
+          {/* Tabs */}
+          <View style={styles.tabContainer}>
             <TouchableOpacity
-              onPress={() => router.push('/delivery/signup')}
-              disabled={loading}
+              style={[styles.tab, activeTab === 'login' && styles.activeTab]}
+              onPress={() => setActiveTab('login')}
             >
-              <Text style={styles.signupLinkTextBold}>Sign up</Text>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'login' && styles.activeTabText,
+                ]}
+              >
+                Login
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.tab}
+              onPress={() => router.push('/delivery/signup')}
+            >
+              <Text style={styles.tabText}>Sign Up</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Form */}
+          <Text style={styles.label}>Email</Text>
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#999" />
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#999" />
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              secureTextEntry
+            />
+          </View>
+
+          <TouchableOpacity>
+            <Text style={styles.forgotPassword}>Forgot password?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+            <Text style={styles.loginButtonText}>Login</Text>
+          </TouchableOpacity>
         </View>
+
+        <Text style={styles.footer}>
+          By continuing, you agree to our{' '}
+          <Text style={styles.footerLink}>Terms</Text> and{' '}
+          <Text style={styles.footerLink}>Privacy Policy</Text>
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -211,73 +141,67 @@ export default function DeliveryLogin() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#f6dbdbff',
   },
-  gradientHeader: {
-    paddingTop: 50,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+
+  /* Header */
+  header: {
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 40,
   },
+
+  /* Switch App Button */
   switchButton: {
-    alignSelf: 'flex-end',
+    position: 'absolute',
+    top: 44,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
+    gap: 6,
   },
-  switchButtonText: {
+  switchText: {
     color: '#FFF',
     fontSize: 13,
     fontWeight: '600',
   },
-  headerContent: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
+
+  headerTitle: {
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#FFF',
-    marginBottom: 8,
+    marginTop: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#FFEFE8',
+    marginTop: 4,
   },
-  card: {
+
+  content: {
     flex: 1,
-    backgroundColor: '#FFF',
-    marginTop: -20,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingTop: 24,
-    paddingHorizontal: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
+    padding: 24,
+    marginTop: -40,
   },
+
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 5,
+  },
+
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#F5F5F5',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   tab: {
     flex: 1,
@@ -286,107 +210,65 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   activeTab: {
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: Colors.white,
   },
   tabText: {
-    fontSize: 15,
-    color: '#757575',
-    fontWeight: '500',
+    fontSize: 16,
+    color: '#666',
   },
   activeTabText: {
-    color: Colors.primary,
-    fontWeight: '700',
+    color: '#FF6B35',
+    fontWeight: '600',
   },
-  form: {
-    flex: 1,
-  },
-  inputWrapper: {
-    marginBottom: 24,
-  },
+
   label: {
     fontSize: 14,
-    color: '#424242',
-    marginBottom: 8,
     fontWeight: '600',
+    marginBottom: 6,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderWidth: 1,
+    borderColor: '#DDD',
     borderRadius: 12,
-    backgroundColor: '#FAFAFA',
-    paddingHorizontal: 16,
-    height: 56,
-  },
-  inputContainerFocused: {
-    borderColor: Colors.primary,
-    backgroundColor: '#FFF',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  inputIcon: {
-    marginRight: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: '#212121',
+    paddingVertical: 14,
+    paddingLeft: 10,
   },
-  eyeIcon: {
-    padding: 8,
-  },
+
   forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    color: Colors.primary,
-    fontSize: 14,
+    textAlign: 'right',
+    color: '#FF6B35',
+    marginBottom: 20,
     fontWeight: '600',
   },
+
   loginButton: {
+    backgroundColor: '#FF6B35',
+    paddingVertical: 16,
     borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 24,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  gradientButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    gap: 8,
   },
   loginButtonText: {
-    color: '#FFF',
+    color: Colors.white,
     fontSize: 18,
     fontWeight: '700',
   },
-  signupLink: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+
+  footer: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#666',
+    marginTop: 20,
   },
-  signupLinkText: {
-    color: '#757575',
-    fontSize: 15,
-  },
-  signupLinkTextBold: {
-    color: Colors.primary,
-    fontSize: 15,
-    fontWeight: '700',
+  footerLink: {
+    color: '#FF6B35',
+    fontWeight: '600',
   },
 });
+
