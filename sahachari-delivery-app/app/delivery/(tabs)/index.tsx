@@ -77,15 +77,6 @@ const DUMMY_MY_DELIVERIES: Order[] = [
 ];
 // ========== END DUMMY DATA ==========
 
-// Custom Dashed Line Component
-const DashedLine = () => (
-  <View style={styles.dashedLineContainer}>
-    {[...Array(6)].map((_, i) => (
-      <View key={i} style={styles.dashedSegment} />
-    ))}
-  </View>
-);
-
 export default function AvailableOrders() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'available' | 'my-deliveries'>('available');
@@ -269,7 +260,7 @@ export default function AvailableOrders() {
           </View>
         </View>
 
-        <DashedLine />
+        <View style={styles.dashedLine} />
 
         <View style={styles.addressRow}>
           <View style={[styles.iconCircle, styles.iconCircleGreen]}>
@@ -357,7 +348,13 @@ export default function AvailableOrders() {
           <Text style={[styles.actionButtonText, { color: '#4CAF50' }]}>Call</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => router.push({
+            pathname: '/delivery/(tabs)/order-details',
+            params: { orderId: order._id }
+          })}
+        >
           <View style={[styles.actionIconCircle, { backgroundColor: '#FFF3E0' }]}>
             <Ionicons name="information-circle" size={18} color="#FF9800" />
           </View>
@@ -372,7 +369,7 @@ export default function AvailableOrders() {
           disabled={loading}
         >
           <LinearGradient
-            colors={['#d0f53cff', '#ca8031ff']}
+            colors={['#00ACC1', '#00BCD4']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.statusButtonGradient}
@@ -402,9 +399,8 @@ export default function AvailableOrders() {
   );
 
   if (loading && !refreshing) {
-    return ( 
-      <SafeAreaView style={styles.container } edges={['top', 'bottom']}>
-
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]} edges={['top']}>
         <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Loading orders...</Text>
       </SafeAreaView>
@@ -605,17 +601,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   address: { fontSize: 14, color: Colors.text.primary, lineHeight: 20 },
-  dashedLineContainer: {
+  dashedLine: {
+    height: 20,
+    width: 2,
     marginLeft: 15,
     marginVertical: 4,
-    justifyContent: 'space-between',
-    height: 20,
-  },
-  dashedSegment: {
-    width: 2,
-    height: 2,
-    backgroundColor: '#DDD',
-    borderRadius: 1,
+    borderLeftWidth: 2,
+    borderLeftColor: '#DDD',
+    borderStyle: 'dashed',
   },
   distanceContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   distance: { fontSize: 14, color: Colors.secondary, fontWeight: '600' },

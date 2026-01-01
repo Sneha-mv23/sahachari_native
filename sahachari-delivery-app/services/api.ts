@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://YOUR_BACKEND_URL';  
+const API_BASE_URL = 'http://YOUR_BACKEND_URL'; // Replace with your actual backend URL
 
 // Types
 export interface Order {
@@ -29,13 +29,6 @@ export interface AcceptedOrder {
   orderId: string;
   order?: Order;
 }
-export interface DeliveryHistoryItem {
-  _id: string;
-  deliveryAddress: string;
-  price: number;
-  deliveredAt: string;
-}
-
 
 // API Service
 class ApiService {
@@ -128,17 +121,6 @@ class ApiService {
   async getProfile(deliveryId: string): Promise<DeliveryUser> {
     return this.request<DeliveryUser>(`/delivery/profile?id=${deliveryId}`, 'GET');
   }
-
-  // H. Get Delivery History (Delivered Orders)
-async getDeliveryHistory(
-  deliveryId: string
-): Promise<DeliveryHistoryItem[]> {
-  return this.request<DeliveryHistoryItem[]>(
-    `/delivery/history?id=${deliveryId}`,
-    'GET'
-  );
-}
-
 }
 
 // Export singleton instance

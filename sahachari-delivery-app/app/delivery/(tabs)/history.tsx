@@ -61,6 +61,7 @@ const DUMMY_HISTORY: DeliveryHistoryItem[] = [
     deliveredAt: '2024-12-25T13:30:00Z',
   },
 ];
+
 // ========== END DUMMY DATA ==========
 
 export default function DeliveryHistory() {
