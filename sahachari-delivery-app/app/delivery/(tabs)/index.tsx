@@ -23,11 +23,20 @@ interface Order {
   deliveryAddress: string;
   distance: string;
   price: number;
-  status: number;
+  status: number; // 1: accepted, 2: picked-up, 3: packed, 4: in-transit, 5: delivered
   customerName?: string;
 }
 
+const DELIVERY_STAGES = {
+  ACCEPTED: 1,
+  PICKED_UP: 2,
+  PACKED: 3,
+  IN_TRANSIT: 4,
+  DELIVERED: 5,
+};
+
 // ========== 🔥 DUMMY DATA - REMOVE DURING API INTEGRATION 🔥 ==========
+
 const DUMMY_AVAILABLE_ORDERS: Order[] = [
   {
     _id: 'ORD001ABC',
@@ -71,7 +80,7 @@ const DUMMY_MY_DELIVERIES: Order[] = [
     deliveryAddress: '654 Silver Heights, Kochi 682024',
     distance: '6.3 km',
     price: 80,
-    status: 2, // picked-up
+    status: 3, // packed - to show progress bar
     customerName: 'Priya Sharma',
   },
 ];
@@ -196,6 +205,41 @@ export default function AvailableOrders() {
     */
   };
 
+  const handleUpdateProgress = async (orderId: string, newStatus: number) => {
+  // TODO: Replace with API call during integration
+  setMyDeliveries(myDeliveries.map(o => 
+    o._id === orderId ? { ...o, status: newStatus } : o
+  ));
+  
+  const statusMessages = {
+    3: 'Order marked as packed!',
+    4: 'Order is now in transit!',
+    5: 'Order delivered successfully!',
+  };
+  
+  Alert.alert('Success', statusMessages[newStatus as keyof typeof statusMessages] || 'Status updated!');
+  
+  // If delivered, remove from list after a delay
+  if (newStatus === 5) {
+    setTimeout(() => {
+      setMyDeliveries(myDeliveries.filter(o => o._id !== orderId));
+    }, 1500);
+  }
+  
+  /* TODO: Uncomment for API integration
+  try {
+    setLoading(true);
+    await api.updateOrderStatus({ orderId, status: newStatus });
+    await loadMyDeliveries();
+    Alert.alert('Success', statusMessages[newStatus] || 'Status updated!');
+  } catch (error) {
+    Alert.alert('Error', 'Failed to update status');
+  } finally {
+    setLoading(false);
+  }
+  */
+};
+
   const handleMarkDelivered = async (order: Order) => {
     Alert.alert('Confirm Delivery', 'Mark this order as delivered?', [
       { text: 'Cancel', style: 'cancel' },
@@ -231,7 +275,82 @@ export default function AvailableOrders() {
   const handleCall = (phone: string = '+919876543210') => {
     Linking.openURL(`tel:${phone}`);
   };
+   
+ const renderProgressBar = (order: Order) => {
+  const stages = [
+    { status: 3, icon: 'cube-outline' as const, activeLabel: 'Packing', completedLabel: 'Packed' },
+    { status: 4, icon: 'bicycle-outline' as const, activeLabel: 'In Transit', completedLabel: 'In Transit' },
+    { status: 5, icon: 'checkmark-circle-outline' as const, activeLabel: 'Delivered', completedLabel: 'Delivered' },
+  ];
 
+  return (
+    <View style={styles.progressOuterContainer}>
+      <View style={styles.progressContainer}>
+        <Text style={styles.progressTitle}>Delivery Progress</Text>
+        <View style={styles.progressBar}>
+          {stages.map((stage, index) => {
+            const isCompleted = order.status > stage.status;
+            const isCurrent = order.status === stage.status;
+            const isNext = order.status === stage.status - 1;
+
+            // Determine which label to show
+            const displayLabel = isCompleted ? stage.completedLabel : stage.activeLabel;
+
+            return (
+              <React.Fragment key={stage.status}>
+                <TouchableOpacity
+                  style={[
+                    styles.progressStage,
+                    isCompleted && styles.progressStageCompleted,
+                    isCurrent && styles.progressStageCurrent,
+                  ]}
+                  onPress={() => {
+                    if (isNext || isCurrent) {
+                      handleUpdateProgress(order._id, stage.status);
+                    }
+                  }}
+                  disabled={!isNext && !isCurrent}
+                  activeOpacity={isNext || isCurrent ? 0.7 : 1}
+                >
+                  <View
+                    style={[
+                      styles.progressIcon,
+                      isCompleted && styles.progressIconCompleted,
+                      isCurrent && styles.progressIconCurrent,
+                    ]}
+                  >
+                    <Ionicons
+                      name={isCompleted ? 'checkmark' : stage.icon}
+                      size={20}
+                      color={isCompleted || isCurrent ? '#FFF' : '#999'}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.progressLabel,
+                      (isCompleted || isCurrent) && styles.progressLabelActive,
+                    ]}
+                  >
+                    {displayLabel}
+                  </Text>
+                </TouchableOpacity>
+
+                {index < stages.length - 1 && (
+                  <View
+                    style={[
+                      styles.progressLine,
+                      isCompleted && styles.progressLineCompleted,
+                    ]}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+};
   const renderAvailableOrder = (order: Order) => (
     <View key={order._id} style={styles.orderCard}>
       <View style={styles.cardHeader}>
@@ -363,38 +482,24 @@ export default function AvailableOrders() {
       </View>
 
       {order.status === 1 ? (
-        <TouchableOpacity
-          style={styles.statusButton}
-          onPress={() => handlePickedUp(order._id)}
-          disabled={loading}
-        >
-          <LinearGradient
-            colors={['#00ACC1', '#00BCD4']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.statusButtonGradient}
-          >
-            <Ionicons name="checkmark-done" size={20} color="#FFF" />
-            <Text style={styles.statusButtonText}>Mark as Picked Up</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity
-          style={styles.statusButton}
-          onPress={() => handleMarkDelivered(order)}
-          disabled={loading}
-        >
-          <LinearGradient
-            colors={['#FF6B35', '#FF8E53']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.statusButtonGradient}
-          >
-            <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-            <Text style={styles.statusButtonText}>Mark as Delivered</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      )}
+  <TouchableOpacity
+    style={styles.statusButton}
+    onPress={() => handlePickedUp(order._id)}
+    disabled={loading}
+  >
+    <LinearGradient
+      colors={['#d4cb19ff', '#00BCD4']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.statusButtonGradient}
+    >
+      <Ionicons name="checkmark-done" size={20} color="#FFF" />
+      <Text style={styles.statusButtonText}>Mark as Picked Up</Text>
+    </LinearGradient>
+  </TouchableOpacity>
+) : (
+  renderProgressBar(order)
+)}
     </View>
   );
 
@@ -716,4 +821,90 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyStateSubtext: { fontSize: 14, color: Colors.text.light, textAlign: 'center' },
+  progressContainer: {
+  backgroundColor: '#F8F9FA',
+  borderRadius: 12,
+  padding: 16,
+  marginTop: 8,
+},
+progressOuterContainer: {
+  backgroundColor: '#e3eef1ff',
+  borderRadius: 16,
+  padding: 16,
+  marginTop: 8,
+  shadowColor: '#e8ebebff',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 8,
+  elevation: 3,
+  borderWidth: 1,
+  borderColor: '#F0F0F0',
+},
+ 
+progressTitle: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: Colors.text.primary,
+  marginBottom: 16,
+  textAlign: 'center',
+},
+progressBar: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+},
+progressStage: {
+  alignItems: 'center',
+  flex: 1,
+},
+progressStageCompleted: {
+  // Optional styling for completed stages
+},
+progressStageCurrent: {
+  // Optional styling for current stage
+},
+progressIcon: {
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  backgroundColor: '#E0E0E0',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+progressIconCurrent: {
+  backgroundColor: '#FF6B35',
+  shadowColor: '#FF6B35',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+  elevation: 3,
+},
+progressIconCompleted: {
+  backgroundColor: '#4CAF50',
+  shadowColor: '#4CAF50',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+  elevation: 3,
+},
+progressLabel: {
+  fontSize: 11,
+  color: '#999',
+  fontWeight: '600',
+  textAlign: 'center',
+},
+progressLabelActive: {
+  color: Colors.text.primary,
+},
+progressLine: {
+  height: 2,
+  flex: 1,
+  backgroundColor: '#E0E0E0',
+  marginHorizontal: -10,
+  marginBottom: 38,
+},
+progressLineCompleted: {
+  backgroundColor: '#4CAF50',
+},
 });
