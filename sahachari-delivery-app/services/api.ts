@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://YOUR_BACKEND_URL'; // Replace with your actual backend URL
+const API_BASE_URL = 'https://d1blyqwcm9usg3.cloudfront.net'; // Replace with your actual backend URL
 
 // Types
 export interface Order {

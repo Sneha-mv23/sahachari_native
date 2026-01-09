@@ -62,10 +62,7 @@ export default function DeliveryLogin() {
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}
       >
-        <TouchableOpacity style={styles.switchButton}>
-          <Ionicons name="apps" size={16} color="#FFF" />
-          <Text style={styles.switchButtonText}>Switch App</Text>
-        </TouchableOpacity>
+        
 
         <View style={styles.headerContent}>
           <View style={styles.iconContainer}>
@@ -219,22 +216,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-  },
-  switchButton: {
-    alignSelf: 'flex-end',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  switchButtonText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  }, 
+   
   headerContent: {
     alignItems: 'center',
     marginTop: 20,

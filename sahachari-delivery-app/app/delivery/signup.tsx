@@ -84,9 +84,7 @@ export default function DeliverySignup() {
       style={styles.container}
     >
       <View style={styles.header}>
-        <TouchableOpacity style={styles.switchButton} disabled={loading}>
-          <Text style={styles.switchButtonText}>Switch App</Text>
-        </TouchableOpacity>
+        
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -204,18 +202,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     padding: 16,
     paddingTop: 50,
-  },
-  switchButton: {
-    backgroundColor: '#9E9E9E',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  switchButtonText: {
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  }, 
   content: {
     flex: 1,
     padding: 24,

@@ -521,10 +521,7 @@ export default function AvailableOrders() {
         style={styles.header}
       >
         <Text style={styles.title}>Deliveries</Text>
-        <TouchableOpacity style={styles.switchButton} onPress={() => router.replace('/')}>
-          <Ionicons name="apps" size={14} color="#FFF" />
-          <Text style={styles.switchButtonText}>Switch</Text>
-        </TouchableOpacity>
+         
       </LinearGradient>
 
       <View style={styles.tabWrapper}>
@@ -614,16 +611,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   title: { fontSize: 24, fontWeight: 'bold', color: '#FFF' },
-  switchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  switchButtonText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
+   
+  
   tabWrapper: {
     backgroundColor: '#FFF',
     paddingHorizontal: 16,
