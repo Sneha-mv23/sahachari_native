@@ -1,14 +1,24 @@
-// API Configuration
-const API_BASE_URL = 'https://d1blyqwcm9usg3.cloudfront.net'; // Replace with your actual backend URL
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// ------------------
+// API Configuration
+// ------------------
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!BASE_URL) {
+  console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env');
+}
+
+// ------------------
 // Types
+// ------------------
 export interface Order {
   _id: string;
   pickupAddress: string;
   deliveryAddress: string;
   distance: string;
   price: number;
-  status: number; // 0 = available, 1 = accepted, 2 = picked-up, 3 = delivered
+  status: number; // 0 = available, 1 = accepted, 2 = picked-up, 3+ progress
   customerName?: string;
   customerId?: string;
 }
@@ -30,7 +40,9 @@ export interface AcceptedOrder {
   order?: Order;
 }
 
+// ------------------
 // API Service
+// ------------------
 class ApiService {
   private baseURL: string;
 
@@ -38,102 +50,101 @@ class ApiService {
     this.baseURL = baseURL;
   }
 
-  // Helper method for making requests
+  // Generic request helper
   private async request<T>(
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: any
   ): Promise<T> {
     try {
+      const token = await AsyncStorage.getItem('token');
+
       const config: RequestInit = {
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        ...(body ? { body: JSON.stringify(body) } : {}),
       };
 
-      if (body) {
-        config.body = JSON.stringify(body);
-      }
-
       const response = await fetch(`${this.baseURL}${endpoint}`, config);
-      
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}`);
       }
 
-      const data = await response.json();
-      return data;
+      return response.json();
     } catch (error) {
-      console.error(`API Error (${endpoint}):`, error);
+      console.error(`❌ API Error (${endpoint})`, error);
       throw error;
     }
   }
 
-  // A. Signup
-  async signup(data: {
+  // ------------------
+  // Auth
+  // ------------------
+  signup(data: {
     name: string;
     email: string;
     password: string;
     pincodes: string[];
-  }): Promise<DeliveryUser> {
+  }) {
     return this.request<DeliveryUser>('/delivery/signup', 'POST', data);
   }
 
-  // B. Login
-  async login(data: {
-    email: string;
-    password: string;
-  }): Promise<DeliveryUser> {
+  login(data: { email: string; password: string }) {
     return this.request<DeliveryUser>('/delivery/login', 'POST', data);
   }
 
-  // C. Get Available Orders (status: 0)
-  async getAvailableOrders(): Promise<Order[]> {
-    return this.request<Order[]>('/delivery/get-orders', 'GET');
+  // ------------------
+  // Orders
+  // ------------------
+  getAvailableOrders() {
+    return this.request<Order[]>('/delivery/get-orders');
   }
 
-  // D. Accept Order
-  async acceptOrder(data: {
-    deliveryId: string;
-    orderId: string;
-  }): Promise<AcceptedOrder> {
+  acceptOrder(data: { deliveryId: string; orderId: string }) {
     return this.request<AcceptedOrder>('/delivery/added-orders', 'POST', data);
   }
 
-  // E. Get My History (accepted orders)
-  async getMyOrders(deliveryId: string): Promise<AcceptedOrder[]> {
+  getMyOrders(deliveryId: string) {
     return this.request<AcceptedOrder[]>(
-      `/delivery/get-added-orders?id=${deliveryId}`,
-      'GET'
+      `/delivery/get-added-orders?id=${deliveryId}`
     );
   }
 
-  // F. Update Order Status (you might need this)
-  async updateOrderStatus(data: {
-    orderId: string;
-    status: number; // 2 = picked-up, 3 = delivered
-  }): Promise<Order> {
-    return this.request<Order>('/delivery/update-order-status', 'POST', data);
+  updateOrderStatus(data: { orderId: string; status: number }) {
+    return this.request<Order>(
+      '/delivery/update-order-status',
+      'POST',
+      data
+    );
   }
 
-  // G. Get Delivery Profile
-  async getProfile(deliveryId: string): Promise<DeliveryUser> {
-    return this.request<DeliveryUser>(`/delivery/profile?id=${deliveryId}`, 'GET');
+  // ------------------
+  // Profile
+  // ------------------
+  getProfile(deliveryId: string) {
+    return this.request<DeliveryUser>(
+      `/delivery/profile?id=${deliveryId}`
+    );
   }
 }
 
-// Export singleton instance
-export const api = new ApiService(API_BASE_URL);
+// ------------------
+// Export API instance
+// ------------------
+export const api = new ApiService(BASE_URL!);
 
-// Helper to get delivery ID from storage
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+// ------------------
+// Helpers
+// ------------------
 export const getDeliveryId = async (): Promise<string | null> => {
   const userData = await AsyncStorage.getItem('deliveryUser');
-  if (userData) {
-    const user = JSON.parse(userData);
-    return user._id;
-  }
-  return null;
+  if (!userData) return null;
+
+  const user = JSON.parse(userData);
+  return user._id;
 };
