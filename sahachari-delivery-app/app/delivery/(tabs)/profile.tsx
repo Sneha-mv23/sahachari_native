@@ -1,21 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../../constants/Colors';
 // import { api, getDeliveryId } from '../../../services/api'; // TODO: Uncomment for API
-
+const router = useRouter();
 interface UserData {
   _id: string;
   name: string;
@@ -69,19 +67,13 @@ export default function Profile() {
   };
   */
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await AsyncStorage.multiRemove(['deliveryUser', 'isLoggedIn']);
-          router.replace('/delivery');
-        },
-      },
-    ]);
-  };
+  const handleLogout = async () => {
+  // (Optional) clear auth data
+  // await AsyncStorage.removeItem('token');
+  // await AsyncStorage.removeItem('user');
+
+  router.replace('/delivery/signup'); // 👈 goes to main index.tsx
+};
 
   if (loading || !userData) {
     return (
@@ -105,10 +97,6 @@ export default function Profile() {
                   <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
         <Text style={styles.title}>Profile</Text>
-        <TouchableOpacity style={styles.switchButton} onPress={() => router.replace('/')}>
-          <Ionicons name="apps" size={14} color="#FFF" />
-          <Text style={styles.switchButtonText}>Switch</Text>
-        </TouchableOpacity>
       </LinearGradient>
 
       <ScrollView 
@@ -231,16 +219,8 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4, marginRight: 12 },
   title: { fontSize: 24, fontWeight: 'bold', color: '#FFF', flex: 1, marginLeft: 16 },
-  switchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  switchButtonText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
+   
+ 
   content: { flex: 1 },
   contentContainer: { padding: 16, paddingBottom: 100 },
   avatarCard: {

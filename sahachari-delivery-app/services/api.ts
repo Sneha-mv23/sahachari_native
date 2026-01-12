@@ -1,5 +1,6 @@
 // API Configuration
-const API_BASE_URL = 'http://YOUR_BACKEND_URL'; // Replace with your actual backend URL
+import axios, { AxiosInstance } from 'axios';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL as string; // Replace with your actual backend URL
 
 // Types
 export interface Order {
@@ -33,9 +34,15 @@ export interface AcceptedOrder {
 // API Service
 class ApiService {
   private baseURL: string;
+  private axios: AxiosInstance;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
+    this.axios = axios.create({
+      baseURL,
+      timeout: 10000,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // Helper method for making requests
@@ -45,27 +52,26 @@ class ApiService {
     body?: any
   ): Promise<T> {
     try {
-      const config: RequestInit = {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
+      const response = await this.axios.request<T>({
+        url: endpoint,
+        method: method.toLowerCase() as any,
+        data: body,
+      });
 
-      if (body) {
-        config.body = JSON.stringify(body);
+      return response.data;
+    } catch (error: any) {
+      // If server responded with an error payload
+      if (error.response) {
+        const msg =
+          error.response.data?.message ||
+          error.response.statusText ||
+          `HTTP error! status: ${error.response.status}`;
+        console.error(`API Error (${endpoint}):`, error.response.data || error.message);
+        throw new Error(msg);
       }
 
-      const response = await fetch(`${this.baseURL}${endpoint}`, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error(`API Error (${endpoint}):`, error);
+      // Network or other errors
+      console.error(`API Error (${endpoint}):`, error.message || error);
       throw error;
     }
   }

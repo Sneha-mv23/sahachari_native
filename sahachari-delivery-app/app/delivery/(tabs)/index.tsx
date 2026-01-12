@@ -15,7 +15,6 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-// import { api, getDeliveryId, Order as ApiOrder } from '../../../services/api'; // TODO: Uncomment for API
 
 interface Order {
   _id: string;
@@ -23,7 +22,7 @@ interface Order {
   deliveryAddress: string;
   distance: string;
   price: number;
-  status: number; // 1: accepted, 2: picked-up, 3: packed, 4: in-transit, 5: delivered
+  status: number;
   customerName?: string;
 }
 
@@ -34,8 +33,6 @@ const DELIVERY_STAGES = {
   IN_TRANSIT: 4,
   DELIVERED: 5,
 };
-
-// ========== 🔥 DUMMY DATA - REMOVE DURING API INTEGRATION 🔥 ==========
 
 const DUMMY_AVAILABLE_ORDERS: Order[] = [
   {
@@ -71,7 +68,7 @@ const DUMMY_MY_DELIVERIES: Order[] = [
     deliveryAddress: '321 Rose Garden, Kochi 682030',
     distance: '4.1 km',
     price: 60,
-    status: 1, // accepted
+    status: 1,
     customerName: 'Rahul Kumar',
   },
   {
@@ -80,21 +77,17 @@ const DUMMY_MY_DELIVERIES: Order[] = [
     deliveryAddress: '654 Silver Heights, Kochi 682024',
     distance: '6.3 km',
     price: 80,
-    status: 3, // packed - to show progress bar
+    status: 3,
     customerName: 'Priya Sharma',
   },
 ];
-// ========== END DUMMY DATA ==========
 
 export default function AvailableOrders() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'available' | 'my-deliveries'>('available');
-  
-  // TODO: During API integration, initialize as empty arrays: useState<Order[]>([])
   const [availableOrders, setAvailableOrders] = useState<Order[]>(DUMMY_AVAILABLE_ORDERS);
   const [myDeliveries, setMyDeliveries] = useState<Order[]>(DUMMY_MY_DELIVERIES);
-  
-  const [loading, setLoading] = useState(false); // Changed to false for dummy data
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -102,65 +95,16 @@ export default function AvailableOrders() {
     // loadData();
   }, []);
 
-  // TODO: Uncomment and use during API integration
-  /*
-  const loadData = async () => {
-    try {
-      await Promise.all([loadAvailableOrders(), loadMyDeliveries()]);
-    } catch (error) {
-      console.error('Load data error:', error);
-      Alert.alert('Error', 'Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
-
-  const loadAvailableOrders = async () => {
-    try {
-      const orders = await api.getAvailableOrders();
-      setAvailableOrders(orders);
-    } catch (error) {
-      console.error('Load available orders error:', error);
-    }
-  };
-
-  const loadMyDeliveries = async () => {
-    try {
-      const deliveryId = await getDeliveryId();
-      if (!deliveryId) return;
-
-      const acceptedOrders = await api.getMyOrders(deliveryId);
-      const orders = acceptedOrders.map(ao => ({
-        ...ao.order,
-        customerName: 'Rahul Kumar',
-      })) as Order[];
-      
-      setMyDeliveries(orders);
-    } catch (error) {
-      console.error('Load my deliveries error:', error);
-    }
-  };
-  */
-
   const handleAcceptOrder = async (order: Order) => {
-    // TODO: Replace with API call during integration
-    Alert.alert('Demo', 'This will call API to accept order', [
-      {
-        text: 'OK',
-        onPress: () => {
-          // Remove from available, add to my deliveries
-          setAvailableOrders(availableOrders.filter(o => o._id !== order._id));
-          setMyDeliveries([...myDeliveries, { ...order, status: 1, customerName: 'Rahul Kumar' }]);
-          setActiveTab('my-deliveries');
-        },
-      },
-    ]);
+    // Remove from available orders
+    setAvailableOrders(availableOrders.filter(o => o._id !== order._id));
+    
+    // Add to my deliveries with accepted status
+    setMyDeliveries([...myDeliveries, { ...order, status: 1, customerName: 'Rahul Kumar' }]);
+    
+    // Automatically switch to My Deliveries tab
+    setActiveTab('my-deliveries');
+
     
     /* TODO: Uncomment for API integration
     try {
@@ -185,86 +129,23 @@ export default function AvailableOrders() {
   };
 
   const handlePickedUp = async (orderId: string) => {
-    // TODO: Replace with API call during integration
     setMyDeliveries(myDeliveries.map(o => 
       o._id === orderId ? { ...o, status: 2 } : o
     ));
-    Alert.alert('Success', 'Order marked as picked up!');
     
-    /* TODO: Uncomment for API integration
-    try {
-      setLoading(true);
-      await api.updateOrderStatus({ orderId, status: 2 });
-      await loadMyDeliveries();
-      Alert.alert('Success', 'Order marked as picked up!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update status');
-    } finally {
-      setLoading(false);
-    }
-    */
   };
 
   const handleUpdateProgress = async (orderId: string, newStatus: number) => {
-  // TODO: Replace with API call during integration
-  setMyDeliveries(myDeliveries.map(o => 
-    o._id === orderId ? { ...o, status: newStatus } : o
-  ));
-  
-  const statusMessages = {
-    3: 'Order marked as packed!',
-    4: 'Order is now in transit!',
-    5: 'Order delivered successfully!',
-  };
-  
-  Alert.alert('Success', statusMessages[newStatus as keyof typeof statusMessages] || 'Status updated!');
-  
-  // If delivered, remove from list after a delay
-  if (newStatus === 5) {
-    setTimeout(() => {
-      setMyDeliveries(myDeliveries.filter(o => o._id !== orderId));
-    }, 1500);
-  }
-  
-  /* TODO: Uncomment for API integration
-  try {
-    setLoading(true);
-    await api.updateOrderStatus({ orderId, status: newStatus });
-    await loadMyDeliveries();
-    Alert.alert('Success', statusMessages[newStatus] || 'Status updated!');
-  } catch (error) {
-    Alert.alert('Error', 'Failed to update status');
-  } finally {
-    setLoading(false);
-  }
-  */
-};
-
-  const handleMarkDelivered = async (order: Order) => {
-    Alert.alert('Confirm Delivery', 'Mark this order as delivered?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Confirm',
-        onPress: () => {
-          // TODO: Replace with API call during integration
-          setMyDeliveries(myDeliveries.filter(o => o._id !== order._id));
-          Alert.alert('Success', 'Order marked as delivered!');
-          
-          /* TODO: Uncomment for API integration
-          try {
-            setLoading(true);
-            await api.updateOrderStatus({ orderId: order._id, status: 3 });
-            await loadMyDeliveries();
-            Alert.alert('Success', 'Order marked as delivered!');
-          } catch (error) {
-            Alert.alert('Error', 'Failed to update status');
-          } finally {
-            setLoading(false);
-          }
-          */
-        },
-      },
-    ]);
+    setMyDeliveries(myDeliveries.map(o => 
+      o._id === orderId ? { ...o, status: newStatus } : o
+    ));
+    
+    
+    if (newStatus === 5) {
+      setTimeout(() => {
+        setMyDeliveries(myDeliveries.filter(o => o._id !== orderId));
+      }, 1500);
+    }
   };
 
   const handleNavigate = (address: string) => {
@@ -276,81 +157,80 @@ export default function AvailableOrders() {
     Linking.openURL(`tel:${phone}`);
   };
    
- const renderProgressBar = (order: Order) => {
-  const stages = [
-    { status: 3, icon: 'cube-outline' as const, activeLabel: 'Packing', completedLabel: 'Packed' },
-    { status: 4, icon: 'bicycle-outline' as const, activeLabel: 'In Transit', completedLabel: 'In Transit' },
-    { status: 5, icon: 'checkmark-circle-outline' as const, activeLabel: 'Delivered', completedLabel: 'Delivered' },
-  ];
+  const renderProgressBar = (order: Order) => {
+    const stages = [
+      { status: 3, icon: 'cube-outline' as const, activeLabel: 'Packing', completedLabel: 'Packed' },
+      { status: 4, icon: 'bicycle-outline' as const, activeLabel: 'In Transit', completedLabel: 'In Transit' },
+      { status: 5, icon: 'checkmark-circle-outline' as const, activeLabel: 'Delivered', completedLabel: 'Delivered' },
+    ];
 
-  return (
-    <View style={styles.progressOuterContainer}>
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressTitle}>Delivery Progress</Text>
-        <View style={styles.progressBar}>
-          {stages.map((stage, index) => {
-            const isCompleted = order.status > stage.status;
-            const isCurrent = order.status === stage.status;
-            const isNext = order.status === stage.status - 1;
+    return (
+      <View style={styles.progressOuterContainer}>
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressTitle}>Delivery Progress</Text>
+          <View style={styles.progressBar}>
+            {stages.map((stage, index) => {
+              const isCompleted = order.status > stage.status;
+              const isCurrent = order.status === stage.status;
+              const isNext = order.status === stage.status - 1;
+              const displayLabel = isCompleted ? stage.completedLabel : stage.activeLabel;
 
-            // Determine which label to show
-            const displayLabel = isCompleted ? stage.completedLabel : stage.activeLabel;
-
-            return (
-              <React.Fragment key={stage.status}>
-                <TouchableOpacity
-                  style={[
-                    styles.progressStage,
-                    isCompleted && styles.progressStageCompleted,
-                    isCurrent && styles.progressStageCurrent,
-                  ]}
-                  onPress={() => {
-                    if (isNext || isCurrent) {
-                      handleUpdateProgress(order._id, stage.status);
-                    }
-                  }}
-                  disabled={!isNext && !isCurrent}
-                  activeOpacity={isNext || isCurrent ? 0.7 : 1}
-                >
-                  <View
+              return (
+                <React.Fragment key={stage.status}>
+                  <TouchableOpacity
                     style={[
-                      styles.progressIcon,
-                      isCompleted && styles.progressIconCompleted,
-                      isCurrent && styles.progressIconCurrent,
+                      styles.progressStage,
+                      isCompleted && styles.progressStageCompleted,
+                      isCurrent && styles.progressStageCurrent,
                     ]}
+                    onPress={() => {
+                      if (isNext || isCurrent) {
+                        handleUpdateProgress(order._id, stage.status);
+                      }
+                    }}
+                    disabled={!isNext && !isCurrent}
+                    activeOpacity={isNext || isCurrent ? 0.7 : 1}
                   >
-                    <Ionicons
-                      name={isCompleted ? 'checkmark' : stage.icon}
-                      size={20}
-                      color={isCompleted || isCurrent ? '#FFF' : '#999'}
+                    <View
+                      style={[
+                        styles.progressIcon,
+                        isCompleted && styles.progressIconCompleted,
+                        isCurrent && styles.progressIconCurrent,
+                      ]}
+                    >
+                      <Ionicons
+                        name={isCompleted ? 'checkmark' : stage.icon}
+                        size={20}
+                        color={isCompleted || isCurrent ? '#FFF' : '#999'}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.progressLabel,
+                        (isCompleted || isCurrent) && styles.progressLabelActive,
+                      ]}
+                    >
+                      {displayLabel}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {index < stages.length - 1 && (
+                    <View
+                      style={[
+                        styles.progressLine,
+                        isCompleted && styles.progressLineCompleted,
+                      ]}
                     />
-                  </View>
-                  <Text
-                    style={[
-                      styles.progressLabel,
-                      (isCompleted || isCurrent) && styles.progressLabelActive,
-                    ]}
-                  >
-                    {displayLabel}
-                  </Text>
-                </TouchableOpacity>
-
-                {index < stages.length - 1 && (
-                  <View
-                    style={[
-                      styles.progressLine,
-                      isCompleted && styles.progressLineCompleted,
-                    ]}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </View>
         </View>
       </View>
-    </View>
-  );
-};
+    );
+  };
+
   const renderAvailableOrder = (order: Order) => (
     <View key={order._id} style={styles.orderCard}>
       <View style={styles.cardHeader}>
@@ -482,24 +362,24 @@ export default function AvailableOrders() {
       </View>
 
       {order.status === 1 ? (
-  <TouchableOpacity
-    style={styles.statusButton}
-    onPress={() => handlePickedUp(order._id)}
-    disabled={loading}
-  >
-    <LinearGradient
-      colors={['#d4cb19ff', '#00BCD4']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.statusButtonGradient}
-    >
-      <Ionicons name="checkmark-done" size={20} color="#FFF" />
-      <Text style={styles.statusButtonText}>Mark as Picked Up</Text>
-    </LinearGradient>
-  </TouchableOpacity>
-) : (
-  renderProgressBar(order)
-)}
+        <TouchableOpacity
+          style={styles.statusButton}
+          onPress={() => handlePickedUp(order._id)}
+          disabled={loading}
+        >
+          <LinearGradient
+            colors={['#d4cb19ff', '#00BCD4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.statusButtonGradient}
+          >
+            <Ionicons name="checkmark-done" size={20} color="#FFF" />
+            <Text style={styles.statusButtonText}>Mark as Picked Up</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      ) : (
+        renderProgressBar(order)
+      )}
     </View>
   );
 
@@ -521,10 +401,6 @@ export default function AvailableOrders() {
         style={styles.header}
       >
         <Text style={styles.title}>Deliveries</Text>
-        <TouchableOpacity style={styles.switchButton} onPress={() => router.replace('/')}>
-          <Ionicons name="apps" size={14} color="#FFF" />
-          <Text style={styles.switchButtonText}>Switch</Text>
-        </TouchableOpacity>
       </LinearGradient>
 
       <View style={styles.tabWrapper}>
@@ -567,7 +443,6 @@ export default function AvailableOrders() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={() => {
-              // TODO: Uncomment for API: onRefresh()
               setRefreshing(true);
               setTimeout(() => setRefreshing(false), 1000);
             }} 
@@ -614,16 +489,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   title: { fontSize: 24, fontWeight: 'bold', color: '#FFF' },
-  switchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  switchButtonText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
   tabWrapper: {
     backgroundColor: '#FFF',
     paddingHorizontal: 16,
@@ -822,89 +687,84 @@ const styles = StyleSheet.create({
   },
   emptyStateSubtext: { fontSize: 14, color: Colors.text.light, textAlign: 'center' },
   progressContainer: {
-  backgroundColor: '#F8F9FA',
-  borderRadius: 12,
-  padding: 16,
-  marginTop: 8,
-},
-progressOuterContainer: {
-  backgroundColor: '#e3eef1ff',
-  borderRadius: 16,
-  padding: 16,
-  marginTop: 8,
-  shadowColor: '#e8ebebff',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.08,
-  shadowRadius: 8,
-  elevation: 3,
-  borderWidth: 1,
-  borderColor: '#F0F0F0',
-},
- 
-progressTitle: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: Colors.text.primary,
-  marginBottom: 16,
-  textAlign: 'center',
-},
-progressBar: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-},
-progressStage: {
-  alignItems: 'center',
-  flex: 1,
-},
-progressStageCompleted: {
-  // Optional styling for completed stages
-},
-progressStageCurrent: {
-  // Optional styling for current stage
-},
-progressIcon: {
-  width: 48,
-  height: 48,
-  borderRadius: 24,
-  backgroundColor: '#E0E0E0',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginBottom: 8,
-},
-progressIconCurrent: {
-  backgroundColor: '#FF6B35',
-  shadowColor: '#FF6B35',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-  elevation: 3,
-},
-progressIconCompleted: {
-  backgroundColor: '#4CAF50',
-  shadowColor: '#4CAF50',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-  elevation: 3,
-},
-progressLabel: {
-  fontSize: 11,
-  color: '#999',
-  fontWeight: '600',
-  textAlign: 'center',
-},
-progressLabelActive: {
-  color: Colors.text.primary,
-},
-progressLine: {
-  height: 2,
-  flex: 1,
-  backgroundColor: '#E0E0E0',
-  marginHorizontal: -10,
-  marginBottom: 38,
-},
-progressLineCompleted: {
-  backgroundColor: '#4CAF50',
-},
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  progressOuterContainer: {
+    backgroundColor: '#e3eef1ff',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+    shadowColor: '#e8ebebff',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  progressTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  progressBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  progressStage: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  progressStageCompleted: {},
+  progressStageCurrent: {},
+  progressIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressIconCurrent: {
+    backgroundColor: '#FF6B35',
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  progressIconCompleted: {
+    backgroundColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  progressLabel: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  progressLabelActive: {
+    color: Colors.text.primary,
+  },
+  progressLine: {
+    height: 2,
+    flex: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: -10,
+    marginBottom: 38,
+  },
+  progressLineCompleted: {
+    backgroundColor: '#4CAF50',
+  },
 });

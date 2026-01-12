@@ -147,10 +147,6 @@ export default function DeliveryHistory() {
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.title}>Delivery History</Text>
-        <TouchableOpacity style={styles.switchButton} onPress={() => router.replace('/')}>
-          <Ionicons name="apps" size={14} color="#FFF" />
-          <Text style={styles.switchButtonText}>Switch</Text>
-        </TouchableOpacity>
       </LinearGradient>
 
       <ScrollView 
