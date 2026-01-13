@@ -1,0 +1,151 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  header: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginTop: 10,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#FFF',
+    marginTop: 5,
+  },
+  card: {
+    backgroundColor: '#FFF',
+    marginHorizontal: 15,
+    marginTop: -30,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 3,
+    borderBottomColor: '#FF7043',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#999',
+    fontWeight: '600',
+  },
+  activeTabText: {
+    color: '#FF7043',
+  },
+  statusBanner: {
+    backgroundColor: '#f3fff4',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  statusText: {
+    color: '#2e7d32',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    marginTop: 15,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginBottom: 15,
+    backgroundColor: '#f9f9f9',
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    color: '#333',
+  },
+  pincodeRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 15,
+  },
+  pincodeInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#333',
+    backgroundColor: '#f9f9f9',
+  },
+  addButton: {
+    backgroundColor: '#FF7043',
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  pincodeList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
+  pincodeChip: {
+    backgroundColor: '#FFE0D6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  pincodeText: {
+    color: '#FF7043',
+    fontWeight: '600',
+  },
+  signupButton: {
+    backgroundColor: '#FF7043',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  signupButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

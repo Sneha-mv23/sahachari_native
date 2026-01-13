@@ -1,21 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../../constants/Colors';
 // import { api, getDeliveryId } from '../../../services/api'; // TODO: Uncomment for API
-
+const router = useRouter();
 interface UserData {
   _id: string;
   name: string;
@@ -69,19 +67,13 @@ export default function Profile() {
   };
   */
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await AsyncStorage.multiRemove(['deliveryUser', 'isLoggedIn']);
-          router.replace('/delivery');
-        },
-      },
-    ]);
-  };
+  const handleLogout = async () => {
+  // (Optional) clear auth data
+  // await AsyncStorage.removeItem('token');
+  // await AsyncStorage.removeItem('user');
+
+  router.replace('/delivery/signup'); // 👈 goes to main index.tsx
+};
 
   if (loading || !userData) {
     return (
