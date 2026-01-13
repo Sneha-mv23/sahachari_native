@@ -147,10 +147,7 @@ export default function DeliveryHistory() {
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.title}>Delivery History</Text>
-<<<<<<< HEAD
-=======
          
->>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
       </LinearGradient>
 
       <ScrollView 

@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-import axios, { AxiosInstance } from 'axios';
-=======
 import axios,{ AxiosInstance} from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
->>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
 
 // ------------------
 // API Configuration
@@ -68,15 +64,6 @@ class ApiService {
     method: 'GET' | 'POST' = 'GET',
     body?: any
   ): Promise<T> {
-<<<<<<< HEAD
-    const response = await this.axios.request<T>({
-      url: endpoint,
-      method,
-      data: body,
-    });
-
-    return response.data;
-=======
     try {
       const token = await AsyncStorage.getItem('token');
 
@@ -108,7 +95,6 @@ class ApiService {
       console.error(`❌ API Error (${endpoint})`, error);
       throw error;
     }
->>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
   }
 
   signup(data: any) {

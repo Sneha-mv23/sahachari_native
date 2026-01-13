@@ -16,11 +16,7 @@ import {
 } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../services/api';
-<<<<<<< HEAD
 import { styles } from './styles/signup.styles';
-=======
-import { styles } from './styles/signupStyles';
->>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
 
 export default function DeliverySignup() {
   const router = useRouter();
@@ -95,14 +91,8 @@ export default function DeliverySignup() {
       >
         {/* Header */}
         <LinearGradient colors={['#FF8A65', '#FF7043']} style={styles.header}>
-<<<<<<< HEAD
           <Ionicons name="bicycle" size={60} color="#FFF" />
           <Text style={styles.headerTitle}>Delivery Partner</Text>
-=======
-
-          <Ionicons name="bicycle" size={56} color="#FFF" />
-          <Text style={styles.headerSubtitle}>Delivery Partner</Text>
->>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
           <Text style={styles.headerSubtitle}>Start earning with deliveries</Text>
         </LinearGradient>
 
@@ -207,8 +197,4 @@ export default function DeliverySignup() {
       </ScrollView>
     </KeyboardAvoidingView>
   );
-<<<<<<< HEAD
 }
-=======
-} 
->>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
