@@ -24,6 +24,7 @@ export default function DeliveryTabsLayout() {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
+          
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -48,6 +49,7 @@ export default function DeliveryTabsLayout() {
         name="history"
         options={{
           title: 'History',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time" size={24} color={color} />
           ),
@@ -57,6 +59,7 @@ export default function DeliveryTabsLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={24} color={color} />
           ),
@@ -64,6 +67,7 @@ export default function DeliveryTabsLayout() {
       />
       <Tabs.Screen
         name="order-details"
+        
         options={{
           href: null,   
         }}

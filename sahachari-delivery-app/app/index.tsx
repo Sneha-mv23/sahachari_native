@@ -14,7 +14,7 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace('/delivery');
+      router.replace('/delivery/login');
     }, 2000);
 
     return () => clearTimeout(timer);
@@ -23,25 +23,14 @@ export default function SplashScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-
-        {/* White Circle with Bicycle Icon */}
         <View style={styles.iconWrapper}>
           <Ionicons name="bicycle" size={48} color="#FF5722" />
         </View>
 
-        {/* App Name */}
         <Text style={styles.title}>Sahachari</Text>
-
-        {/* Subtitle */}
         <Text style={styles.subtitle}>Delivery Partner</Text>
 
-        {/* Loader */}
-        <ActivityIndicator
-          size="large"
-          color="#FFFFFF"
-          style={{ marginTop: 30 }}
-        />
-
+        <ActivityIndicator size="large" color="#FFFFFF" style={{ marginTop: 30 }} />
       </View>
     </SafeAreaView>
   );
@@ -70,7 +59,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,

@@ -130,10 +130,7 @@ export default function OrderDetailsScreen() {
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
-        <TouchableOpacity style={styles.switchButton} onPress={() => router.replace('/')}>
-          <Ionicons name="apps" size={14} color="#FFF" />
-          <Text style={styles.switchButtonText}>Switch</Text>
-        </TouchableOpacity>
+         
       </LinearGradient>
 
       <ScrollView 
@@ -263,16 +260,6 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4, marginRight: 12 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF', flex: 1 },
-  switchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  switchButtonText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
   content: { flex: 1 },
   contentContainer: { padding: 16, paddingBottom: 100 },
   orderIdCard: {
