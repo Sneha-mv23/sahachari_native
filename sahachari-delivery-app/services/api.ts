@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 import axios, { AxiosInstance } from 'axios';
+=======
+import axios,{ AxiosInstance} from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+>>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
 
 // ------------------
 // API Configuration
@@ -38,6 +43,12 @@ export interface AcceptedOrder {
   order?: Order;
 }
 
+
+export interface AuthResponse {
+  user: DeliveryUser;
+  token: string;
+}
+
 // ------------------
 // API Service
 // ------------------
@@ -57,6 +68,7 @@ class ApiService {
     method: 'GET' | 'POST' = 'GET',
     body?: any
   ): Promise<T> {
+<<<<<<< HEAD
     const response = await this.axios.request<T>({
       url: endpoint,
       method,
@@ -64,6 +76,39 @@ class ApiService {
     });
 
     return response.data;
+=======
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      const config: RequestInit = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      };
+      console.log(` ${method} ${this.baseURL}${endpoint}`);
+      if (token) console.log('Using token:', token.substring(0, 20) + '...');
+
+      const response = await fetch(`${this.baseURL}${endpoint}`, config);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        if (response.status === 401) {
+          console.warn('Unauthorized - clearing stored data');
+          await AsyncStorage.multiRemove(['token', 'deliveryUser', 'isLoggedIn']);
+          throw new Error('Session expired. Please login again.');
+        }
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error(`❌ API Error (${endpoint})`, error);
+      throw error;
+    }
+>>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
   }
 
   signup(data: any) {

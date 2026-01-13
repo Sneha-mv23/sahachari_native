@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
+
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,7 +16,11 @@ import {
 } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../services/api';
+<<<<<<< HEAD
 import { styles } from './styles/signup.styles';
+=======
+import { styles } from './styles/signupStyles';
+>>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
 
 export default function DeliverySignup() {
   const router = useRouter();
@@ -90,8 +95,14 @@ export default function DeliverySignup() {
       >
         {/* Header */}
         <LinearGradient colors={['#FF8A65', '#FF7043']} style={styles.header}>
+<<<<<<< HEAD
           <Ionicons name="bicycle" size={60} color="#FFF" />
           <Text style={styles.headerTitle}>Delivery Partner</Text>
+=======
+
+          <Ionicons name="bicycle" size={56} color="#FFF" />
+          <Text style={styles.headerSubtitle}>Delivery Partner</Text>
+>>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
           <Text style={styles.headerSubtitle}>Start earning with deliveries</Text>
         </LinearGradient>
 
@@ -99,7 +110,7 @@ export default function DeliverySignup() {
         <View style={styles.card}>
           {/* Tabs */}
           <View style={styles.tabContainer}>
-            <TouchableOpacity style={styles.tab} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.tab} onPress={() => router.replace('/delivery')}>
               <Text style={styles.tabText}>Login</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.tab, styles.activeTab]}>
@@ -196,4 +207,8 @@ export default function DeliverySignup() {
       </ScrollView>
     </KeyboardAvoidingView>
   );
+<<<<<<< HEAD
 }
+=======
+} 
+>>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa

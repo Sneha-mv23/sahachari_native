@@ -3,10 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
-  Alert,
-  Linking,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
@@ -15,387 +12,90 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-
-interface Order {
-  _id: string;
-  pickupAddress: string;
-  deliveryAddress: string;
-  distance: string;
-  price: number;
-  status: number;
-  customerName?: string;
-}
-
-const DELIVERY_STAGES = {
-  ACCEPTED: 1,
-  PICKED_UP: 2,
-  PACKED: 3,
-  IN_TRANSIT: 4,
-  DELIVERED: 5,
-};
-
-const DUMMY_AVAILABLE_ORDERS: Order[] = [
-  {
-    _id: 'ORD001ABC',
-    pickupAddress: 'Fresh Mart, MG Road, Kochi',
-    deliveryAddress: '123 Park Street, Kochi 682002',
-    distance: '3.5 km',
-    price: 50,
-    status: 0,
-  },
-  {
-    _id: 'ORD002XYZ',
-    pickupAddress: 'Super Market, Beach Road, Kochi',
-    deliveryAddress: '456 Hill View, Kochi 682001',
-    distance: '5.2 km',
-    price: 70,
-    status: 0,
-  },
-  {
-    _id: 'ORD003LMN',
-    pickupAddress: 'City Store, Palarivattom, Kochi',
-    deliveryAddress: '789 Marine Drive, Kochi 682003',
-    distance: '2.8 km',
-    price: 45,
-    status: 0,
-  },
-];
-
-const DUMMY_MY_DELIVERIES: Order[] = [
-  {
-    _id: 'ORD004PQR',
-    pickupAddress: 'Grocery Hub, Kakkanad, Kochi',
-    deliveryAddress: '321 Rose Garden, Kochi 682030',
-    distance: '4.1 km',
-    price: 60,
-    status: 1,
-    customerName: 'Rahul Kumar',
-  },
-  {
-    _id: 'ORD005STU',
-    pickupAddress: 'Mini Market, Edappally, Kochi',
-    deliveryAddress: '654 Silver Heights, Kochi 682024',
-    distance: '6.3 km',
-    price: 80,
-    status: 3,
-    customerName: 'Priya Sharma',
-  },
-];
+import { Order, TabType } from './types';
+import {
+  DELIVERY_STAGES,
+  DUMMY_AVAILABLE_ORDERS,
+  DUMMY_MY_DELIVERIES,
+  COLOR_CONSTANTS,
+  EMPTY_STATE,
+} from './constants';
+import { useOrdersQuery, useOrderMutations } from './hooks/useOrdersQuery';
+import { useOrderActions } from './hooks/useOrderActions';
+import { AvailableOrderCard } from './components/AvailableOrderCard';
+import { MyDeliveryCard } from './components/MyDeliveryCard';
+import { styles } from './styles/index.styles';
 
 export default function AvailableOrders() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'available' | 'my-deliveries'>('available');
-  const [availableOrders, setAvailableOrders] = useState<Order[]>(DUMMY_AVAILABLE_ORDERS);
-  const [myDeliveries, setMyDeliveries] = useState<Order[]>(DUMMY_MY_DELIVERIES);
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('available');
   const [refreshing, setRefreshing] = useState(false);
+  const [deliveryId] = useState<string>(''); // TODO: Get from user context/auth
+
+  const { availableOrders, myDeliveries, isLoading, isError, error, refetch } = useOrdersQuery(
+    DUMMY_AVAILABLE_ORDERS,
+    DUMMY_MY_DELIVERIES,
+    deliveryId
+  );
+
+  const { handleAcceptOrder, handlePickedUp, handleUpdateProgress, isUpdating, acceptError, updateError } =
+    useOrderMutations(deliveryId);
+
+  const { handleNavigate, handleCall } = useOrderActions();
 
   useEffect(() => {
-    // TODO: Uncomment for API integration
-    // loadData();
-  }, []);
+    // Refetch when component mounts
+    refetch();
+  }, [refetch]);
 
-  const handleAcceptOrder = async (order: Order) => {
-    // Remove from available orders
-    setAvailableOrders(availableOrders.filter(o => o._id !== order._id));
-    
-    // Add to my deliveries with accepted status
-    setMyDeliveries([...myDeliveries, { ...order, status: 1, customerName: 'Rahul Kumar' }]);
-    
-    // Automatically switch to My Deliveries tab
-    setActiveTab('my-deliveries');
+  const handleDetailsPress = (orderId: string) => {
+    router.push({
+      pathname: '/delivery/(tabs)/order-details',
+      params: { orderId },
+    });
+  };
 
-    
-    /* TODO: Uncomment for API integration
+  const onRefresh = async () => {
+    setRefreshing(true);
     try {
-      const deliveryId = await getDeliveryId();
-      if (!deliveryId) {
-        Alert.alert('Error', 'User not logged in');
-        return;
-      }
-
-      setLoading(true);
-      await api.acceptOrder({ deliveryId, orderId: order._id });
-      await loadData();
-      Alert.alert('Success', 'Order accepted!');
-      setActiveTab('my-deliveries');
+      await refetch();
     } catch (error) {
-      console.error('Accept order error:', error);
-      Alert.alert('Error', 'Failed to accept order');
+      console.error('Refresh error:', error);
     } finally {
-      setLoading(false);
-    }
-    */
-  };
-
-  const handlePickedUp = async (orderId: string) => {
-    setMyDeliveries(myDeliveries.map(o => 
-      o._id === orderId ? { ...o, status: 2 } : o
-    ));
-    
-  };
-
-  const handleUpdateProgress = async (orderId: string, newStatus: number) => {
-    setMyDeliveries(myDeliveries.map(o => 
-      o._id === orderId ? { ...o, status: newStatus } : o
-    ));
-    
-    
-    if (newStatus === 5) {
-      setTimeout(() => {
-        setMyDeliveries(myDeliveries.filter(o => o._id !== orderId));
-      }, 1500);
+      setRefreshing(false);
     }
   };
 
-  const handleNavigate = (address: string) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-    Linking.openURL(url);
-  };
-
-  const handleCall = (phone: string = '+919876543210') => {
-    Linking.openURL(`tel:${phone}`);
-  };
-   
-  const renderProgressBar = (order: Order) => {
-    const stages = [
-      { status: 3, icon: 'cube-outline' as const, activeLabel: 'Packing', completedLabel: 'Packed' },
-      { status: 4, icon: 'bicycle-outline' as const, activeLabel: 'In Transit', completedLabel: 'In Transit' },
-      { status: 5, icon: 'checkmark-circle-outline' as const, activeLabel: 'Delivered', completedLabel: 'Delivered' },
-    ];
-
+  const renderEmptyState = (type: TabType) => {
+    const state = type === 'available' ? EMPTY_STATE.available : EMPTY_STATE.myDeliveries;
     return (
-      <View style={styles.progressOuterContainer}>
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressTitle}>Delivery Progress</Text>
-          <View style={styles.progressBar}>
-            {stages.map((stage, index) => {
-              const isCompleted = order.status > stage.status;
-              const isCurrent = order.status === stage.status;
-              const isNext = order.status === stage.status - 1;
-              const displayLabel = isCompleted ? stage.completedLabel : stage.activeLabel;
-
-              return (
-                <React.Fragment key={stage.status}>
-                  <TouchableOpacity
-                    style={[
-                      styles.progressStage,
-                      isCompleted && styles.progressStageCompleted,
-                      isCurrent && styles.progressStageCurrent,
-                    ]}
-                    onPress={() => {
-                      if (isNext || isCurrent) {
-                        handleUpdateProgress(order._id, stage.status);
-                      }
-                    }}
-                    disabled={!isNext && !isCurrent}
-                    activeOpacity={isNext || isCurrent ? 0.7 : 1}
-                  >
-                    <View
-                      style={[
-                        styles.progressIcon,
-                        isCompleted && styles.progressIconCompleted,
-                        isCurrent && styles.progressIconCurrent,
-                      ]}
-                    >
-                      <Ionicons
-                        name={isCompleted ? 'checkmark' : stage.icon}
-                        size={20}
-                        color={isCompleted || isCurrent ? '#FFF' : '#999'}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        styles.progressLabel,
-                        (isCompleted || isCurrent) && styles.progressLabelActive,
-                      ]}
-                    >
-                      {displayLabel}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {index < stages.length - 1 && (
-                    <View
-                      style={[
-                        styles.progressLine,
-                        isCompleted && styles.progressLineCompleted,
-                      ]}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </View>
+      <View style={styles.emptyState}>
+        <View style={styles.emptyIconContainer}>
+          <Ionicons name={state.icon as any} size={64} color="#E0E0E0" />
         </View>
+        <Text style={styles.emptyStateText}>{state.title}</Text>
+        <Text style={styles.emptyStateSubtext}>{state.subtitle}</Text>
       </View>
     );
   };
 
-  const renderAvailableOrder = (order: Order) => (
-    <View key={order._id} style={styles.orderCard}>
-      <View style={styles.cardHeader}>
-        <View style={styles.orderIdContainer}>
-          <Ionicons name="cube-outline" size={18} color={Colors.primary} />
-          <Text style={styles.orderId}>#{order._id.slice(-6).toUpperCase()}</Text>
-        </View>
-        <LinearGradient
-          colors={['#FFE5D9', '#FFF3E0']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.priceTag}
-        >
-          <Text style={styles.price}>₹{order.price}</Text>
-        </LinearGradient>
-      </View>
-
-      <View style={styles.addressContainer}>
-        <View style={styles.addressRow}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="location" size={16} color="#FF6B35" />
-          </View>
-          <View style={styles.addressTextContainer}>
-            <Text style={styles.label}>Pickup Location</Text>
-            <Text style={styles.address}>{order.pickupAddress}</Text>
-          </View>
-        </View>
-
-        <View style={styles.dashedLine} />
-
-        <View style={styles.addressRow}>
-          <View style={[styles.iconCircle, styles.iconCircleGreen]}>
-            <Ionicons name="flag" size={16} color="#4CAF50" />
-          </View>
-          <View style={styles.addressTextContainer}>
-            <Text style={styles.label}>Drop Location</Text>
-            <Text style={styles.address}>{order.deliveryAddress}</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.distanceContainer}>
-        <Ionicons name="navigate-circle" size={16} color={Colors.secondary} />
-        <Text style={styles.distance}>{order.distance}</Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.acceptButton}
-        onPress={() => handleAcceptOrder(order)}
-        activeOpacity={0.8}
-        disabled={loading}
-      >
-        <LinearGradient
-          colors={['#FF6B35', '#FF8E53']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.acceptButtonGradient}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFF" size="small" />
-          ) : (
-            <>
-              <Text style={styles.acceptButtonText}>Accept Order</Text>
-              <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-            </>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderMyDelivery = (order: Order) => (
-    <View key={order._id} style={styles.orderCard}>
-      <View style={styles.cardHeader}>
-        <View style={styles.orderIdContainer}>
-          <Ionicons name="cube-outline" size={18} color={Colors.primary} />
-          <Text style={styles.orderId}>#{order._id.slice(-6).toUpperCase()}</Text>
-        </View>
-        {order.status === 2 && (
-          <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Picked up</Text>
-          </View>
-        )}
-      </View>
-
-      {order.customerName && (
-        <View style={styles.customerCard}>
-          <View style={styles.customerAvatar}>
-            <Ionicons name="person" size={20} color={Colors.primary} />
-          </View>
-          <View style={styles.customerInfo}>
-            <Text style={styles.customerName}>{order.customerName}</Text>
-            <Text style={styles.customerAddress}>{order.deliveryAddress}</Text>
-          </View>
-        </View>
-      )}
-
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleNavigate(order.deliveryAddress)}
-        >
-          <View style={[styles.actionIconCircle, { backgroundColor: '#E3F2FD' }]}>
-            <Ionicons name="navigate" size={18} color="#2196F3" />
-          </View>
-          <Text style={[styles.actionButtonText, { color: '#2196F3' }]}>Navigate</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={() => handleCall()}>
-          <View style={[styles.actionIconCircle, { backgroundColor: '#E8F5E9' }]}>
-            <Ionicons name="call" size={18} color="#4CAF50" />
-          </View>
-          <Text style={[styles.actionButtonText, { color: '#4CAF50' }]}>Call</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => router.push({
-            pathname: '/delivery/(tabs)/order-details',
-            params: { orderId: order._id }
-          })}
-        >
-          <View style={[styles.actionIconCircle, { backgroundColor: '#FFF3E0' }]}>
-            <Ionicons name="information-circle" size={18} color="#FF9800" />
-          </View>
-          <Text style={[styles.actionButtonText, { color: '#FF9800' }]}>Details</Text>
-        </TouchableOpacity>
-      </View>
-
-      {order.status === 1 ? (
-        <TouchableOpacity
-          style={styles.statusButton}
-          onPress={() => handlePickedUp(order._id)}
-          disabled={loading}
-        >
-          <LinearGradient
-            colors={['#d4cb19ff', '#00BCD4']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.statusButtonGradient}
-          >
-            <Ionicons name="checkmark-done" size={20} color="#FFF" />
-            <Text style={styles.statusButtonText}>Mark as Picked Up</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      ) : (
-        renderProgressBar(order)
-      )}
-    </View>
-  );
-
-  if (loading && !refreshing) {
+  const renderError = () => {
+    const errorMessage = error?.message || 'An error occurred while loading orders';
     return (
-      <SafeAreaView style={[styles.container, styles.loadingContainer]} edges={['top']}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading orders...</Text>
-      </SafeAreaView>
+      <View style={styles.emptyState}>
+        <View style={styles.emptyIconContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#FF6B35" />
+        </View>
+        <Text style={styles.emptyStateText}>Error Loading Orders</Text>
+        <Text style={styles.emptyStateSubtext}>{errorMessage}</Text>
+      </View>
     );
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <LinearGradient
-        colors={['#FF6B35', '#FF8E53']}
+        colors={COLOR_CONSTANTS.primaryGradient as any}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.header}
@@ -442,39 +142,51 @@ export default function AvailableOrders() {
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
-            onRefresh={() => {
-              setRefreshing(true);
-              setTimeout(() => setRefreshing(false), 1000);
-            }} 
+            onRefresh={onRefresh}
           />
         }
       >
         {activeTab === 'available' ? (
           availableOrders.length > 0 ? (
-            availableOrders.map(renderAvailableOrder)
+            availableOrders.map((order) => (
+              <AvailableOrderCard
+                key={order._id}
+                order={order}
+                loading={isUpdating}
+                onAccept={(accepted) => {
+                  handleAcceptOrder(accepted._id);
+                  setActiveTab('my-deliveries');
+                }}
+              />
+            ))
+          ) : isError ? (
+            renderError()
           ) : (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconContainer}>
-                <Ionicons name="cube-outline" size={64} color="#E0E0E0" />
-              </View>
-              <Text style={styles.emptyStateText}>No orders available</Text>
-              <Text style={styles.emptyStateSubtext}>Check back later for new deliveries</Text>
-            </View>
+            renderEmptyState('available')
           )
         ) : myDeliveries.length > 0 ? (
-          myDeliveries.map(renderMyDelivery)
+          myDeliveries.map((order) => (
+            <MyDeliveryCard
+              key={order._id}
+              order={order}
+              stages={DELIVERY_STAGES}
+              loading={isUpdating}
+              onNavigate={handleNavigate}
+              onCall={handleCall}
+              onDetails={() => handleDetailsPress(order._id)}
+              onPickedUp={handlePickedUp}
+              onProgressUpdate={handleUpdateProgress}
+            />
+          ))
+        ) : isError ? (
+          renderError()
         ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-              <Ionicons name="bicycle-outline" size={64} color="#E0E0E0" />
-            </View>
-            <Text style={styles.emptyStateText}>No active deliveries</Text>
-            <Text style={styles.emptyStateSubtext}>Accept orders to start earning</Text>
-          </View>
+          renderEmptyState('my-deliveries')
         )}
       </ScrollView>
     </SafeAreaView>
   );
+<<<<<<< HEAD
 }
 
 const styles = StyleSheet.create({
@@ -768,3 +480,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
   },
 });
+=======
+}
+>>>>>>> 5250b6530a7a1dabfdba8b438226f4dad449c8aa
