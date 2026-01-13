@@ -1,8 +1,13 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Order } from '../types';
 
 // Configure your API base URL here
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+if (!API_BASE_URL) {
+  console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env');
+}
 
 export class ApiError extends Error {
   constructor(
@@ -27,14 +32,19 @@ class OrderApiClient {
       },
     });
 
-    // Request interceptor
+    // Request interceptor - Add token from AsyncStorage
     this.client.interceptors.request.use(
-      (config) => {
-        // Add authorization token if needed
-        // const token = await getAuthToken();
-        // if (token) {
-        //   config.headers.Authorization = `Bearer ${token}`;
-        // }
+      async (config) => {
+        try {
+          const token = await AsyncStorage.getItem('token');
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+            console.log('[API Request] Token added to headers');
+          }
+        } catch (error) {
+          console.error('[API Request] Error getting token:', error);
+        }
+        console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
       (error) => {
@@ -49,11 +59,21 @@ class OrderApiClient {
         console.log('[API Response]', response.config.url, response.status);
         return response;
       },
-      (error: AxiosError) => {
+      async (error: AxiosError) => {
         const status = error.response?.status || 0;
         const message =
           (error.response?.data as any)?.message || error.message || 'Unknown error occurred';
         console.error('[API Error]', status, message);
+
+        // Handle unauthorized errors
+        if (status === 401) {
+          console.warn('[API Error] Unauthorized - clearing stored data');
+          try {
+            await AsyncStorage.multiRemove(['token', 'deliveryUser', 'isLoggedIn']);
+          } catch (clearError) {
+            console.error('Error clearing AsyncStorage:', clearError);
+          }
+        }
 
         throw new ApiError(status, String(message), error.response?.data);
       },

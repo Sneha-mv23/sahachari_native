@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Order, DeliveryStage } from '../types';
 import { COLOR_CONSTANTS } from '../constants';
@@ -16,6 +16,27 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   stages,
   onStagePress,
 }) => {
+  const [loadingStage, setLoadingStage] = useState<number | null>(null);
+
+  const handleStagePress = async (stage: DeliveryStage) => {
+    const isNext = order.status === stage.status - 1;
+    const isCurrent = order.status === stage.status;
+
+    if (!isNext && !isCurrent) {
+      return; // Disabled, don't process
+    }
+
+    try {
+      setLoadingStage(stage.status);
+      console.log('[ProgressBar] Clicking stage:', stage.activeLabel, 'status:', stage.status);
+      await onStagePress(order._id, stage.status);
+      console.log('[ProgressBar] Successfully updated to:', stage.activeLabel);
+    } catch (error) {
+      console.error('[ProgressBar] Error updating stage:', error);
+    } finally {
+      setLoadingStage(null);
+    }
+  };
   return (
     <View style={styles.progressOuterContainer}>
       <Text style={styles.progressTitle}>Delivery Progress</Text>
@@ -34,11 +55,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
                   isCompleted && styles.progressStageCompleted,
                   isCurrent && styles.progressStageCurrent,
                 ]}
-                onPress={() => {
-                  if (isNext || isCurrent) {
-                    onStagePress(order._id, stage.status);
-                  }
-                }}
+                onPress={() => handleStagePress(stage)}
                 disabled={!isNext && !isCurrent}
                 activeOpacity={isNext || isCurrent ? 0.7 : 1}
               >
@@ -49,11 +66,15 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
                     isCurrent && styles.progressIconCurrent,
                   ]}
                 >
-                  <Ionicons
-                    name={isCompleted ? 'checkmark' : stage.icon}
-                    size={20}
-                    color={isCompleted || isCurrent ? '#FFF' : '#999'}
-                  />
+                  {loadingStage === stage.status ? (
+                    <ActivityIndicator color="#FFF" size="small" />
+                  ) : (
+                    <Ionicons
+                      name={isCompleted ? 'checkmark' : stage.icon}
+                      size={20}
+                      color={isCompleted || isCurrent ? '#FFF' : '#999'}
+                    />
+                  )}
                 </View>
                 <Text
                   style={[

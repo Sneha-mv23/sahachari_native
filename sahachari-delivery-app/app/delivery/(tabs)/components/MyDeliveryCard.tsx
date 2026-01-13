@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +36,21 @@ export const MyDeliveryCard: React.FC<MyDeliveryCardProps> = ({
   onPickedUp,
   onProgressUpdate,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handlePickedUpPress = async () => {
+    try {
+      setIsLoading(true);
+      console.log('[MyDeliveryCard] Marking as picked up:', order._id);
+      await onPickedUp(order._id);
+      console.log('[MyDeliveryCard] Successfully marked as picked up');
+    } catch (error) {
+      console.error('[MyDeliveryCard] Error marking as picked up:', error);
+      Alert.alert('Error', 'Failed to mark order as picked up. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <View style={styles.orderCard}>
       <View style={styles.cardHeader}>
@@ -71,8 +87,8 @@ export const MyDeliveryCard: React.FC<MyDeliveryCardProps> = ({
       {order.status === 1 ? (
         <TouchableOpacity
           style={styles.statusButton}
-          onPress={() => onPickedUp(order._id)}
-          disabled={loading}
+          onPress={handlePickedUpPress}
+          disabled={isLoading || loading}
         >
           <LinearGradient
             colors={COLOR_CONSTANTS.pickedUpGradient as any}
@@ -80,7 +96,7 @@ export const MyDeliveryCard: React.FC<MyDeliveryCardProps> = ({
             end={{ x: 1, y: 0 }}
             style={styles.statusButtonGradient}
           >
-            {loading ? (
+            {isLoading || loading ? (
               <ActivityIndicator color="#FFF" size="small" />
             ) : (
               <>
