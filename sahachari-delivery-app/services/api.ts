@@ -1,12 +1,25 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Order } from '../types';
 
 // Configure your API base URL here
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://d1blyqwcm9usg3.cloudfront.net';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 if (!API_BASE_URL) {
   console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env');
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  role: 'delivery' | 'admin' | 'user';
+  token: string;
 }
 
 export class ApiError extends Error {
@@ -20,7 +33,7 @@ export class ApiError extends Error {
   }
 }
 
-class OrderApiClient {
+class ApiClient {
   private client: AxiosInstance;
 
   constructor(baseURL: string = API_BASE_URL) {
@@ -69,7 +82,7 @@ class OrderApiClient {
         if (status === 401) {
           console.warn('[API Error] Unauthorized - clearing stored data');
           try {
-            await AsyncStorage.multiRemove(['token', 'deliveryUser', 'deliveryId', 'isLoggedIn']);
+            await AsyncStorage.multiRemove(['token', 'deliveryUser', 'isLoggedIn']);
           } catch (clearError) {
             console.error('Error clearing AsyncStorage:', clearError);
           }
@@ -81,64 +94,50 @@ class OrderApiClient {
   }
 
   /**
-   * Fetch available orders for delivery
-   * @returns Promise<Order[]> - List of available orders
+   * Login with email and password
+   * @param credentials - Email and password
+   * @returns Promise<AuthUser> - User object with authentication token
    * @throws ApiError with status and message
    */
-  async getAvailableOrders(): Promise<Order[]> {
-    const { data } = await this.client.get<Order[]>('/delivery/get-orders');
+  async login(credentials: LoginCredentials): Promise<AuthUser> {
+    const { data } = await this.client.post<AuthUser>('/auth/login', credentials);
+    
+    // Store token in AsyncStorage for future requests
+    if (data.token) {
+      await AsyncStorage.setItem('token', data.token);
+    }
+    
     return data;
   }
 
   /**
-   * Fetch user's active deliveries
-   * @param deliveryId - ID of the delivery person
-   * @returns Promise<Order[]> - List of orders assigned to this delivery person
+   * Register a new delivery partner
+   * @param credentials - Registration data
+   * @returns Promise<AuthUser> - User object with authentication token
    * @throws ApiError with status and message
    */
-  async getMyDeliveries(deliveryId: string): Promise<Order[]> {
-    const { data } = await this.client.get<Order[]>('/delivery/get-added-orders', {
-      params: { id: deliveryId },
-    });
+  async signup(credentials: any): Promise<AuthUser> {
+    const { data } = await this.client.post<AuthUser>('/auth/signup', credentials);
+    
+    // Store token in AsyncStorage for future requests
+    if (data.token) {
+      await AsyncStorage.setItem('token', data.token);
+    }
+    
     return data;
   }
 
   /**
-   * Accept an available order
-   * @param orderId - ID of the order to accept
-   * @param deliveryId - ID of the delivery person accepting the order
-   * @returns Promise<Order> - Updated order object
-   * @throws ApiError with status and message
+   * Logout user
+   * @returns Promise<void>
    */
-  async acceptOrder(orderId: string, deliveryId: string): Promise<Order> {
-    const { data } = await this.client.post<Order>('/delivery/added-orders', {
-      deliveryId,
-      orderId,
-    });
-    return data;
-  }
-
-  /**
-   * Update order delivery status
-   * @param orderId - ID of the order
-   * @param status - New delivery stage (0=packing, 1=transit, 2=delivered)
-   * @returns Promise<Order> - Updated order object
-   * @throws ApiError with status and message
-   */
-  async updateOrderStatus(orderId: string, status: number): Promise<Order> {
-    const { data } = await this.client.patch<Order>(`/delivery/orders/${orderId}`, { status });
-    return data;
-  }
-
-  /**
-   * Get detailed information about a specific order
-   * @param orderId - ID of the order
-   * @returns Promise<Order> - Detailed order object
-   * @throws ApiError with status and message
-   */
-  async getOrderDetails(orderId: string): Promise<Order> {
-    const { data } = await this.client.get<Order>(`/delivery/orders/${orderId}`);
-    return data;
+  async logout(): Promise<void> {
+    try {
+      await this.client.post('/auth/logout');
+    } finally {
+      // Clear token from AsyncStorage
+      await AsyncStorage.multiRemove(['token', 'deliveryUser', 'isLoggedIn']);
+    }
   }
 
   /**
@@ -155,4 +154,4 @@ class OrderApiClient {
   }
 }
 
-export const orderApiClient = new OrderApiClient();
+export const api = new ApiClient();

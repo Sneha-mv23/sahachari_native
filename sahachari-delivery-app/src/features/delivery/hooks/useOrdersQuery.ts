@@ -36,17 +36,10 @@ export const useOrdersQuery = (
     queryKey: orderQueryKeys.available(),
     queryFn: async () => {
       console.log('[useOrdersQuery] Loading dummy available orders');
-      // Directly return dummy data without AsyncStorage
-      // const saved = await AsyncStorage.getItem('orderStatusUpdates');
-      // const statusUpdates = saved ? JSON.parse(saved) : {};
-      // const orders = initialAvailable.map(order => ({
-      //   ...order,
-      //   status: statusUpdates[order._id] ?? order.status
-      // }));
       return initialAvailable;
     },
     enabled: true,
-    staleTime: Infinity, // Keep data fresh indefinitely in dummy mode
+    staleTime: Infinity,
     gcTime: 5 * 60 * 1000,
     retry: 1,
   });
@@ -61,17 +54,10 @@ export const useOrdersQuery = (
     queryKey: deliveryId ? orderQueryKeys.myDeliveries(deliveryId) : ['orders', 'myDeliveries'],
     queryFn: async () => {
       console.log('[useOrdersQuery] Loading dummy my deliveries');
-      // Directly return dummy data without AsyncStorage
-      // const saved = await AsyncStorage.getItem('orderStatusUpdates');
-      // const statusUpdates = saved ? JSON.parse(saved) : {};
-      // const orders = initialMyDeliveries.map(order => ({
-      //   ...order,
-      //   status: statusUpdates[order._id] ?? order.status
-      // }));
       return initialMyDeliveries;
     },
     enabled: true,
-    staleTime: Infinity, // Keep data fresh indefinitely in dummy mode
+    staleTime: Infinity,
     gcTime: 5 * 60 * 1000,
     retry: 1,
   });
@@ -108,17 +94,6 @@ export const useOrderMutations = (deliveryId?: string): UseOrderMutationsReturn 
   const acceptOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
       console.log('[acceptOrder] Starting mutation with deliveryId:', deliveryId);
-      // API commented out - using dummy data only
-      // if (deliveryId) {
-      //   console.log('[acceptOrder] Calling API with orderId:', orderId);
-      //   const result = await orderApiClient.acceptOrder(orderId, deliveryId);
-      //   console.log('[acceptOrder] API Success:', result);
-      //   return result;
-      // } else {
-      //   // Dummy data mode
-      //   console.log('[acceptOrder] Using dummy data mode');
-      //   return { _id: orderId, status: 1 } as Order;
-      // }
       console.log('[acceptOrder] Using dummy data mode');
       return { _id: orderId, status: 1 } as Order;
     },
@@ -157,16 +132,9 @@ export const useOrderMutations = (deliveryId?: string): UseOrderMutationsReturn 
       console.error('[acceptOrder] Mutation error:', error);
     },
     onSuccess: () => {
-      console.log('[acceptOrder] onSuccess: Invalidating available orders');
-      // Only invalidate available orders - keep the optimistically updated myDeliveries
-      // This prevents the order from disappearing after the update
-      queryClient.invalidateQueries({ queryKey: orderQueryKeys.available() });
-      
-      // Only refetch myDeliveries if we have a real deliveryId (API mode)
-      // In dummy data mode, keep the optimistic update
-      if (deliveryId) {
-        queryClient.invalidateQueries({ queryKey: orderQueryKeys.myDeliveries(deliveryId) });
-      }
+      console.log('[acceptOrder] onSuccess: Keeping optimistic update (no refetch)');
+      // Don't invalidate - keep the optimistic updates only
+      // This prevents duplicates since we already updated the cache in onMutate
     },
   });
 
