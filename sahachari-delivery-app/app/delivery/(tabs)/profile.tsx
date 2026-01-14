@@ -2,8 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useIsFocused } from '@react-navigation/native';
 import {
   ActivityIndicator,
   ScrollView,
@@ -14,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
+import EditProfile from '../edit-profile';
 // import { api, getDeliveryId } from '@src/services/api'; // TODO: Uncomment for API
 const router = useRouter();
 interface UserData {
@@ -43,27 +42,10 @@ export default function Profile() {
   const [userData, setUserData] = useState<UserData | null>(DUMMY_USER_DATA);
   const [loading, setLoading] = useState(false); // Changed to false for dummy data
 
-  const isFocused = useIsFocused();
-
   useEffect(() => {
-    if (!isFocused) return;
-    const loadProfile = async () => {
-      setLoading(true);
-      try {
-        const stored = await AsyncStorage.getItem('deliveryUser');
-        if (stored) {
-          setUserData(JSON.parse(stored));
-        } else {
-          setUserData(DUMMY_USER_DATA);
-        }
-      } catch (err) {
-        console.error('Failed to load profile from storage', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProfile();
-  }, [isFocused]);
+    // TODO: Uncomment for API integration
+    // loadProfile();
+  }, []);
 
   // TODO: Uncomment for API integration
   /*
@@ -196,16 +178,23 @@ export default function Profile() {
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => router.push('/delivery/edit-profile')}
-          >
-            <View style={styles.actionIconCircle}>
-              <Ionicons name="create-outline" size={20} color={Colors.primary} />
-            </View>
-            <Text style={styles.actionButtonText}>Edit Profile</Text>
-            <Ionicons name="chevron-forward" size={20} color={Colors.text.light} />
-          </TouchableOpacity>
+                      <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.push('/delivery/edit-profile')}
+            >
+              <View style={styles.actionIconCircle}>
+                <Ionicons name="create-outline" size={20} color={Colors.primary} />
+              </View>
+
+              <Text style={styles.actionButtonText}>Edit Profile</Text>
+
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Colors.text.light}
+              />
+            </TouchableOpacity>
+
 
         </View>
 

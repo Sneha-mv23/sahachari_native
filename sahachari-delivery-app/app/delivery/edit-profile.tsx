@@ -4,17 +4,20 @@ import {
   Alert,
   Image,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../../constants/Colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors } from '../../constants/Colors';
+import { styles } from '../../src/features/delivery/styles/EditProfile.styles';
 
 interface UserData {
   _id: string;
@@ -30,27 +33,32 @@ export default function EditProfile() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [pincodesText, setPincodesText] = useState('');
+  const [pincodes, setPincodes] = useState<string[]>([]);
+  const [currentPincode, setCurrentPincode] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const stored = await AsyncStorage.getItem('deliveryUser');
-      if (stored) {
-        const u: UserData = JSON.parse(stored);
-        setName(u.name);
-        setEmail(u.email);
-        setPincodesText((u.pincodes || []).join(', '));
-        setPhotoUri((u as any).photo || null);
-      }
-
-      // Ask media permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Permission to access media library was denied');
-      }
-    })();
+    loadUserData();
+    requestPermissions();
   }, []);
+
+  const loadUserData = async () => {
+    const stored = await AsyncStorage.getItem('deliveryUser');
+    if (stored) {
+      const u: UserData = JSON.parse(stored);
+      setName(u.name);
+      setEmail(u.email);
+      setPincodes(u.pincodes || []);
+      setPhotoUri((u as any).photo || null);
+    }
+  };
+
+  const requestPermissions = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      console.log('Permission to access media library was denied');
+    }
+  };
 
   const pickImage = async () => {
     try {
@@ -61,24 +69,45 @@ export default function EditProfile() {
         quality: 0.7,
       });
 
-      // result may have `cancelled` or `assets` depending on SDK
-      const uri = (result as any)?.assets?.[0]?.uri || (result as any)?.uri;
-      if (uri) setPhotoUri(uri);
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        setPhotoUri(result.assets[0].uri);
+      }
     } catch (err) {
       console.error('Image picker error', err);
       Alert.alert('Error', 'Could not pick image');
     }
   };
 
-  const saveProfile = async () => {
-    if (!name.trim()) return Alert.alert('Validation', 'Name is required');
-    const emailRegex = /\S+@\S+\.\S+/;
-    if (!emailRegex.test(email)) return Alert.alert('Validation', 'Enter a valid email');
+  const handleAddPincode = () => {
+    if (currentPincode.trim().length === 6) {
+      if (pincodes.includes(currentPincode.trim())) {
+        Alert.alert('Error', 'Pincode already added');
+        return;
+      }
+      setPincodes([...pincodes, currentPincode.trim()]);
+      setCurrentPincode('');
+    } else {
+      Alert.alert('Error', 'Please enter a valid 6-digit pincode');
+    }
+  };
 
-    const pincodes = pincodesText
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean);
+  const handleRemovePincode = (index: number) => {
+    setPincodes(pincodes.filter((_, i) => i !== index));
+  };
+
+  const saveProfile = async () => {
+    if (!name.trim()) {
+      return Alert.alert('Validation', 'Name is required');
+    }
+    
+    const emailRegex = /\S+@\S+\.\S+/;
+    if (!emailRegex.test(email)) {
+      return Alert.alert('Validation', 'Enter a valid email');
+    }
+
+    if (pincodes.length === 0) {
+      return Alert.alert('Validation', 'Add at least one pincode');
+    }
 
     try {
       const existing = await AsyncStorage.getItem('deliveryUser');
@@ -98,7 +127,7 @@ export default function EditProfile() {
       };
 
       await AsyncStorage.setItem('deliveryUser', JSON.stringify(updated));
-      Alert.alert('Saved', 'Profile updated successfully');
+      Alert.alert('Success', 'Profile updated successfully!');
       router.back();
     } catch (err) {
       console.error('Failed to save profile', err);
@@ -108,106 +137,160 @@ export default function EditProfile() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 6 }}>
-          <Ionicons name="arrow-back" size={22} color={Colors.primary} />
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={['#FF6B35', '#FF8E53', '#FFA07A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
-      </View>
+      </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity style={styles.avatarPicker} onPress={pickImage}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.avatarImage} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="camera" size={28} color={Colors.primary} />
-              <Text style={styles.avatarText}>Add Photo</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.content}>
+            {/* Avatar Card */}
+            <View style={styles.avatarCard}>
+              <View style={styles.avatarContainer}>
+                {photoUri ? (
+                  <Image source={{ uri: photoUri }} style={styles.avatarImage} />
+                ) : (
+                  <LinearGradient
+                    colors={['#FF6B35', '#FF8E53']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.avatarGradient}
+                  >
+                    <Ionicons name="person" size={36} color="#FFF" />
+                  </LinearGradient>
+                )}
+                
+                {/* Camera Icon Button */}
+                <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
+                  <Ionicons name="camera" size={18} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+              
+              <TouchableOpacity onPress={pickImage}>
+                <Text style={styles.avatarText}>Change Photo</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </TouchableOpacity>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Name</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Your name" />
+            {/* Form Card */}
+            <View style={styles.formCard}>
+              <View style={styles.field}>
+                <Text style={styles.label}>Full Name</Text>
+                <View style={styles.inputContainer}>
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color="#999"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Enter your full name"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.label}>Email</Text>
+                <View style={styles.inputContainer}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color="#999"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Enter your email"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Pincodes Card */}
+            <View style={styles.pincodesCard}>
+              <View style={styles.pincodeHeader}>
+                <Ionicons
+                  name="location"
+                  size={20}
+                  color={Colors.primary}
+                  style={styles.pincodeHeaderIcon}
+                />
+                <Text style={styles.pincodeHeaderText}>Serviceable Pincodes</Text>
+              </View>
+
+              <View style={styles.pincodeRow}>
+                <TextInput
+                  style={styles.pincodeInput}
+                  value={currentPincode}
+                  onChangeText={setCurrentPincode}
+                  placeholder="6-digit pincode"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+                <TouchableOpacity style={styles.addButton} onPress={handleAddPincode}>
+                  <Text style={styles.addButtonText}>+ Add</Text>
+                </TouchableOpacity>
+              </View>
+
+              {pincodes.length > 0 && (
+                <View style={styles.pincodeList}>
+                  {pincodes.map((pin, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.pincodeChip}
+                      onPress={() => handleRemovePincode(index)}
+                    >
+                      <Text style={styles.pincodeChipText}>{pin}</Text>
+                      <Ionicons name="close-circle" size={16} color="#F57C00" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Action Buttons */}
+        <View style={styles.buttonsContainer}>
+          <View style={styles.buttonsRow}>
+            <TouchableOpacity style={styles.btnCancel} onPress={() => router.back()}>
+              <Text style={styles.btnCancelText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.btn} onPress={saveProfile}>
+              <LinearGradient
+                colors={['#FF6B35', '#FF8E53']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.btnSaveGradient}
+              >
+                <Text style={styles.btnSaveText}>Save Changes</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Pincodes (comma separated)</Text>
-          <TextInput
-            style={[styles.input, { minHeight: 44 }]}
-            value={pincodesText}
-            onChangeText={setPincodesText}
-            placeholder="682001, 682002"
-          />
-        </View>
-
-        <View style={styles.buttonsRow}>
-          <TouchableOpacity style={[styles.btn, styles.btnCancel]} onPress={() => router.back()}>
-            <Text style={styles.btnCancelText}>Cancel</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.btn, styles.btnSave]} onPress={saveProfile}>
-            <Text style={styles.btnSaveText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '600' },
-  content: { padding: 16, paddingBottom: 120 },
-  avatarPicker: { alignItems: 'center', marginBottom: 16 },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#FFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  avatarText: { marginTop: 6, fontSize: 12, color: Colors.text.secondary },
-  avatarImage: { width: 100, height: 100, borderRadius: 50 },
-  field: { marginBottom: 12 },
-  label: { fontSize: 14, color: Colors.text.primary, marginBottom: 6 },
-  input: {
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: Colors.text.primary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  buttonsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
-  btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
-  btnCancel: { backgroundColor: '#FFF', marginRight: 8, borderWidth: 1, borderColor: '#E0E0E0' },
-  btnSave: { backgroundColor: Colors.primary, marginLeft: 8 },
-  btnCancelText: { color: Colors.text.primary, fontWeight: '600' },
-  btnSaveText: { color: '#FFF', fontWeight: '700' },
-});
