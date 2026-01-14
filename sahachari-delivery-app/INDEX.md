@@ -292,10 +292,10 @@ A: Follow [CHECKLIST.md](./CHECKLIST.md) - Deployment Steps section
 ## 🎯 Quick Links by File Type
 
 ### Code Files
-- [orderApi.ts](./app/delivery/(tabs)/services/orderApi.ts) - API client
-- [queryClient.ts](./app/delivery/(tabs)/config/queryClient.ts) - Configuration
-- [useOrdersQuery.ts](./app/delivery/(tabs)/hooks/useOrdersQuery.ts) - Main hooks
-- [ErrorBoundary.tsx](./app/delivery/(tabs)/components/ErrorBoundary.tsx) - Error handling
+- [orderApi.ts](./src/features/delivery/services/orderApi.ts) - API client
+- [queryClient.ts](./src/features/delivery/config/queryClient.ts) - Configuration
+- [useOrdersQuery.ts](./src/features/delivery/hooks/useOrdersQuery.ts) - Main hooks
+- [ErrorBoundary.tsx](./src/features/delivery/components/ErrorBoundary.tsx) - Error handling
 
 ### Documentation Files
 - [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - Quick lookup

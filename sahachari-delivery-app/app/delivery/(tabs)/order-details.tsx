@@ -14,7 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-// import { api } from '../../../services/api'; // TODO: Uncomment for API
+// import { api } from '@src/services/api'; // TODO: Uncomment for API
 
 interface Product {
   name: string;
@@ -51,10 +51,10 @@ const DUMMY_ORDER_DETAILS: OrderDetails = {
 export default function OrderDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  
+
   // TODO: Get orderId from params during API integration
   // const orderId = params.orderId as string;
-  
+
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(DUMMY_ORDER_DETAILS);
   const [loading, setLoading] = useState(false);
 
@@ -130,10 +130,10 @@ export default function OrderDetailsScreen() {
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
-         
+
       </LinearGradient>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -196,7 +196,7 @@ export default function OrderDetailsScreen() {
         </View>
 
         {/* Action Buttons */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navigationButton}
           onPress={handleStartNavigation}
           activeOpacity={0.8}
@@ -212,7 +212,7 @@ export default function OrderDetailsScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.callButton}
           onPress={handleCallCustomer}
           activeOpacity={0.8}
@@ -228,7 +228,7 @@ export default function OrderDetailsScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.deliveredButton}
           onPress={handleMarkDelivered}
           activeOpacity={0.8}

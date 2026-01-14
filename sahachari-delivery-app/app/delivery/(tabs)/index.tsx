@@ -14,19 +14,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../../constants/Colors';
-import { Order, TabType } from './types';
+import { Order, TabType } from 'src/features/delivery/types';
 import {
   DELIVERY_STAGES,
   DUMMY_AVAILABLE_ORDERS,
   DUMMY_MY_DELIVERIES,
   COLOR_CONSTANTS,
   EMPTY_STATE,
-} from './constants';
-import { useOrdersQuery, useOrderMutations } from './hooks/useOrdersQuery';
-import { useOrderActions } from './hooks/useOrderActions';
-import { AvailableOrderCard } from './components/AvailableOrderCard';
-import { MyDeliveryCard } from './components/MyDeliveryCard';
-import { styles } from './styles/index.styles';
+} from '../../../src/features/delivery/constants';
+import { useOrdersQuery, useOrderMutations } from '../../../src/features/delivery/hooks/useOrdersQuery';
+import { useOrderActions } from '../../../src/features/delivery/hooks/useOrderActions';
+import { AvailableOrderCard } from '../../../src/features/delivery/components/AvailableOrderCard';
+import { MyDeliveryCard } from '@src/features/delivery/components/MyDeliveryCard';
+import { styles } from 'src/features/delivery/styles/index.styles';
 
 export default function AvailableOrders() {
   const router = useRouter();
@@ -64,7 +64,7 @@ export default function AvailableOrders() {
     //   }
     // };
     // loadDeliveryId();
-    
+
     // Load accepted orders from storage
     // const loadAcceptedOrders = async () => {
     //   try {
@@ -77,7 +77,7 @@ export default function AvailableOrders() {
     //   }
     // };
     // loadAcceptedOrders();
-    
+
     console.log('[useEffect] Dummy data mode - no AsyncStorage');
   }, []);
 
@@ -207,8 +207,8 @@ export default function AvailableOrders() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
           />
         }
@@ -252,7 +252,7 @@ export default function AvailableOrders() {
               acceptedOrders.includes(order._id)
             );
             const allDeliveries = [...myDeliveries, ...acceptedOrdersData];
-            
+
             return allDeliveries.length > 0 ? (
               allDeliveries.map((order) => (
                 <MyDeliveryCard

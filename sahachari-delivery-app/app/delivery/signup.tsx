@@ -14,9 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
- import { Colors } from '../../constants/Colors';
-import { api } from '../../services/api';
-import { styles } from './styles/signup.styles';
+import { Colors } from '../../constants/Colors';
+import { api } from '../../src/services/api';
+import { styles } from '../../src/features/delivery/styles/signup.styles';
 
 export default function DeliverySignup() {
   const router = useRouter();
@@ -109,7 +109,7 @@ export default function DeliverySignup() {
       setLoading(false);
       console.log('[Signup] finished (loading false)');
     }
-  }; 
+  };
 
   return (
     <KeyboardAvoidingView
