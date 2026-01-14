@@ -14,8 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { api } from '../../src/services/api';
+import { useMutation } from '@tanstack/react-query';
+import { api } from '../../services/api';
 import { styles } from '../../src/features/delivery/styles/signup.styles';
 
 export default function DeliverySignup() {
@@ -26,89 +26,58 @@ export default function DeliverySignup() {
   const [password, setPassword] = useState('');
   const [pincodes, setPincodes] = useState<string[]>([]);
   const [currentPincode, setCurrentPincode] = useState('');
-  const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const addPincode = () => {
-    console.log('[Signup] addPincode called - currentPincode:', currentPincode);
-
-    if (currentPincode.trim().length === 6) {
-      const updated = [...pincodes, currentPincode.trim()];
-      setPincodes(updated);
-      setCurrentPincode('');
-      setStatusMessage('Pincode added');
-      console.log('[Signup] pincode added, pincodes now:', updated);
-      setTimeout(() => setStatusMessage(null), 2500);
-    } else {
-      Alert.alert('Error', 'Please enter a valid 6-digit pincode');
-      setStatusMessage('Invalid pincode');
-      setTimeout(() => setStatusMessage(null), 2500);
-    }
-  };
-
-  const removePincode = (index: number) => {
-    console.log('[Signup] removePincode called - index:', index);
-    const updated = pincodes.filter((_, i) => i !== index);
-    setPincodes(updated);
-    setStatusMessage('Pincode removed');
-    setTimeout(() => setStatusMessage(null), 2000);
-  };
-
-  const handleSignup = async () => {
-    console.log('[Signup] handleSignup called', { name, email, password: password ? '***' : '', pincodes });
-    setStatusMessage('Create Account pressed');
-    setTimeout(() => setStatusMessage(null), 2000);
-
-    if (!name || !email || !password) {
-      console.log('[Signup] validation failed: missing fields');
-      Alert.alert('Error', 'Please fill in all fields');
-      setStatusMessage('Missing required fields');
-      setTimeout(() => setStatusMessage(null), 2500);
-      return;
-    }
-
-    if (pincodes.length === 0) {
-      console.log('[Signup] validation failed: no pincodes');
-      Alert.alert('Error', 'Please add at least one serviceable pincode');
-      setStatusMessage('Add at least one pincode');
-      setTimeout(() => setStatusMessage(null), 2500);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setStatusMessage('Calling API...');
-      console.log('[Signup] calling API...');
-
-      const payload = {
-        name,
-        email,
-        password,
-        pincodes,
-      };
-
-      console.log('[Signup] payload:', payload);
-
-      const res = await api.signup(payload);
-
-      console.log('[Signup] api response:', res);
-
-      // Save server response (includes _id etc)
+  // 🔹 TanStack mutation
+  const signupMutation = useMutation({
+    mutationFn: api.signup,
+    onSuccess: async (res) => {
       await AsyncStorage.setItem('deliveryUser', JSON.stringify(res));
       Alert.alert('Success', 'Account created successfully');
       setStatusMessage('Signup success');
       setTimeout(() => setStatusMessage(null), 2000);
       router.back();
-    } catch (error: any) {
-      console.error('[Signup] error:', error);
-      const msg = error?.message || String(error) || 'Signup failed. Please try again.';
+    },
+    onError: (error: any) => {
+      const msg = error?.message || 'Signup failed. Please try again.';
       Alert.alert('Error', msg);
-      setStatusMessage(`Error: ${msg}`);
-      setTimeout(() => setStatusMessage(null), 4000);
-    } finally {
-      setLoading(false);
-      console.log('[Signup] finished (loading false)');
+      setStatusMessage(msg);
+      setTimeout(() => setStatusMessage(null), 3000);
+    },
+  });
+
+  const addPincode = () => {
+    if (currentPincode.trim().length === 6) {
+      setPincodes([...pincodes, currentPincode.trim()]);
+      setCurrentPincode('');
+      setStatusMessage('Pincode added');
+      setTimeout(() => setStatusMessage(null), 2000);
+    } else {
+      Alert.alert('Error', 'Enter a valid 6-digit pincode');
     }
+  };
+
+  const removePincode = (index: number) => {
+    setPincodes(pincodes.filter((_, i) => i !== index));
+  };
+
+  const handleSignup = () => {
+    if (!name || !email || !password) {
+      Alert.alert('Error', 'Please fill all fields');
+      return;
+    }
+
+    if (pincodes.length === 0) {
+      Alert.alert('Error', 'Add at least one pincode');
+      return;
+    }
+
+    signupMutation.mutate({
+      name,
+      email,
+      password,
+      pincodes,
+    });
   };
 
   return (
@@ -120,27 +89,28 @@ export default function DeliverySignup() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* 🔶 TOP GRADIENT HEADER */}
+        {/* Header */}
         <LinearGradient colors={['#FF8A65', '#FF7043']} style={styles.header}>
-
-          <Ionicons name="bicycle" size={56} color="#FFF" />
-          <Text style={styles.headerSubtitle}>Delivery Partner</Text>
+          <Ionicons name="bicycle" size={60} color="#FFF" />
+          <Text style={styles.headerTitle}>Delivery Partner</Text>
           <Text style={styles.headerSubtitle}>Start earning with deliveries</Text>
         </LinearGradient>
 
-        {/* White Card Overlapping Gradient */}
+        {/* Card */}
         <View style={styles.card}>
           {/* Tabs */}
           <View style={styles.tabContainer}>
-            <TouchableOpacity style={styles.tab} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.tab} onPress={() => router.replace('/delivery/login')}>
               <Text style={styles.tabText}>Login</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.tab, styles.activeTab]}>
-              <Text style={[styles.tabText, styles.activeTabText]}>Sign Up</Text>
+              <Text style={[styles.tabText, styles.activeTabText]}>
+                Sign Up
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Debug status banner (temporary) */}
+          {/* Status */}
           {statusMessage && (
             <View style={styles.statusBanner}>
               <Text style={styles.statusText}>{statusMessage}</Text>
@@ -154,8 +124,8 @@ export default function DeliverySignup() {
             <TextInput
               style={styles.input}
               value={name}
-              onChangeText={setName}
               placeholder="Enter your full name"
+              onChangeText={setName}
             />
           </View>
 
@@ -167,7 +137,6 @@ export default function DeliverySignup() {
               value={email}
               onChangeText={setEmail}
               placeholder="Enter your email"
-              keyboardType="email-address"
               autoCapitalize="none"
             />
           </View>
@@ -179,19 +148,20 @@ export default function DeliverySignup() {
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="Create a password"
+              placeholder="Enter your password"
               secureTextEntry
             />
           </View>
 
           <Text style={styles.label}>Serviceable Pincodes</Text>
           <View style={styles.pincodeRow}>
+            <Ionicons name="location-outline" size={30} color="#999" />
             <TextInput
               style={styles.pincodeInput}
               value={currentPincode}
               onChangeText={setCurrentPincode}
-              placeholder="6-digit pincode"
               keyboardType="number-pad"
+              placeholder="Enter pincode"
               maxLength={6}
             />
             <TouchableOpacity style={styles.addButton} onPress={addPincode}>
@@ -199,31 +169,32 @@ export default function DeliverySignup() {
             </TouchableOpacity>
           </View>
 
-          {pincodes.length > 0 && (
-            <View style={styles.pincodeList}>
-              {pincodes.map((pin, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.pincodeChip}
-                  onPress={() => removePincode(index)}
-                >
-                  <Text style={styles.pincodeText}>{pin} ✕</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          <View style={styles.pincodeList}>
+            {pincodes.map((pin, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.pincodeChip}
+                onPress={() => removePincode(index)}
+              >
+                <Text style={styles.pincodeText}>{pin} ✕</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <TouchableOpacity
-            style={[styles.signupButton, loading && { opacity: 0.6 }]}
+            style={[
+              styles.signupButton,
+              signupMutation.isPending && { opacity: 0.6 },
+            ]}
             onPress={handleSignup}
-            disabled={loading}
+            disabled={signupMutation.isPending}
           >
             <Text style={styles.signupButtonText}>
-              {loading ? 'Creating...' : 'Create Account'}
+              {signupMutation.isPending ? 'Creating...' : 'Create Account'}
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
-} 
+}
