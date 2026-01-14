@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
-// import { api, getDeliveryId } from '../../../services/api'; // TODO: Uncomment for API
+// import { api, getDeliveryId } from '@src/services/api'; // TODO: Uncomment for API
 const router = useRouter();
 interface UserData {
   _id: string;
@@ -36,7 +36,7 @@ const DUMMY_USER_DATA: UserData = {
 
 export default function Profile() {
   const router = useRouter();
-  
+
   // TODO: During API integration, initialize as null: useState<UserData | null>(null)
   const [userData, setUserData] = useState<UserData | null>(DUMMY_USER_DATA);
   const [loading, setLoading] = useState(false); // Changed to false for dummy data
@@ -68,12 +68,12 @@ export default function Profile() {
   */
 
   const handleLogout = async () => {
-  // (Optional) clear auth data
-  // await AsyncStorage.removeItem('token');
-  // await AsyncStorage.removeItem('user');
+    // (Optional) clear auth data
+    // await AsyncStorage.removeItem('token');
+    // await AsyncStorage.removeItem('user');
 
-  router.replace('/delivery/signup'); // 👈 goes to main index.tsx
-};
+    router.replace('/delivery/signup'); // 👈 goes to main index.tsx
+  };
 
   if (loading || !userData) {
     return (
@@ -94,13 +94,13 @@ export default function Profile() {
         style={styles.header}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                  <Ionicons name="arrow-back" size={24} color="#FFF" />
-                </TouchableOpacity>
+          <Ionicons name="arrow-back" size={24} color="#FFF" />
+        </TouchableOpacity>
         <Text style={styles.title}>Profile</Text>
       </LinearGradient>
 
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
@@ -184,7 +184,7 @@ export default function Profile() {
             <Text style={styles.actionButtonText}>Edit Profile</Text>
             <Ionicons name="chevron-forward" size={20} color={Colors.text.light} />
           </TouchableOpacity>
- 
+
         </View>
 
         {/* Logout Button */}
@@ -219,8 +219,8 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4, marginRight: 12 },
   title: { fontSize: 24, fontWeight: 'bold', color: '#FFF', flex: 1, marginLeft: 16 },
-   
- 
+
+
   content: { flex: 1 },
   contentContainer: { padding: 16, paddingBottom: 100 },
   avatarCard: {

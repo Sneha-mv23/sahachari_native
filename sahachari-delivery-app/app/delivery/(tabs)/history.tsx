@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-// import { api, getDeliveryId } from '../../../services/api'; // TODO: Uncomment for API
+// import { api, getDeliveryId } from '@src/services/api'; // TODO: Uncomment for API
 
 interface DeliveryHistoryItem {
   _id: string;
@@ -78,7 +78,7 @@ export default function DeliveryHistory() {
   useEffect(() => {
     // TODO: Uncomment for API integration
     // loadHistory();
-    
+
     // Calculate earnings from dummy data
     calculateEarnings(DUMMY_HISTORY);
   }, []);
@@ -147,10 +147,10 @@ export default function DeliveryHistory() {
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.title}>Delivery History</Text>
-         
+
       </LinearGradient>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -208,7 +208,7 @@ export default function DeliveryHistory() {
                   <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
                 </View>
               </View>
-              
+
               <View style={styles.cardContent}>
                 <View style={styles.deliveryHeader}>
                   <View style={styles.orderIdContainer}>
@@ -221,14 +221,14 @@ export default function DeliveryHistory() {
                     <Text style={styles.deliveryPrice}>₹{item.price}</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.addressRow}>
                   <Ionicons name="location" size={16} color={Colors.text.secondary} />
                   <Text style={styles.deliveryAddress} numberOfLines={2}>
                     {item.deliveryAddress}
                   </Text>
                 </View>
-                
+
                 <View style={styles.dateRow}>
                   <Ionicons name="time-outline" size={14} color={Colors.text.light} />
                   <Text style={styles.deliveryDate}>

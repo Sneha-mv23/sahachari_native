@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
 
-import { api } from '../../services/api';
-import { styles } from './styles/login.styles';
+import { api } from '../../src/services/api';
+import { styles } from '../../src/features/delivery/styles/login.styles';
 
 export default function DeliveryLogin() {
   const router = useRouter();
+
+  console.log('[DeliveryLogin] render');
+  useEffect(() => {
+    console.log('[DeliveryLogin] mounted');
+  }, []);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  console.log('[RootLayout] render');
   return (
     <QueryClientProvider client={queryClient}>
       <>

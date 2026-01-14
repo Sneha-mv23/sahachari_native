@@ -9,7 +9,7 @@ This document provides a complete inventory of all files created and modified du
 
 ### Core Implementation (3 files)
 
-#### 1. `app/delivery/(tabs)/config/queryClient.ts` ⭐
+#### 1. `src/features/delivery/config/queryClient.ts` ⭐
 **Purpose**: Central React Query configuration  
 **What it does**: Sets up QueryClient with optimal defaults for mobile apps  
 **Key Features**:
@@ -33,7 +33,7 @@ retry: 2,                      // Retry attempts
 
 ---
 
-#### 2. `app/delivery/(tabs)/services/orderApi.ts` 🔄 Enhanced
+#### 2. `src/features/delivery/services/orderApi.ts` 🔄 Enhanced
 **Purpose**: HTTP client for all API communication  
 **What it does**: Wraps Axios with error handling, interceptors, and API client methods  
 **Key Features**:
@@ -69,7 +69,7 @@ orderApiClient.healthCheck()
 
 ---
 
-#### 3. `app/delivery/(tabs)/hooks/useOrdersQuery.ts` 🔄 Enhanced
+#### 3. `src/features/delivery/hooks/useOrdersQuery.ts` 🔄 Enhanced
 **Purpose**: Main React Query hooks for order data fetching and mutations  
 **What it does**: Manages all order-related server state with queries and mutations  
 **Key Features**:
@@ -286,7 +286,7 @@ console.log('Cache:', status);
 
 **New code**:
 ```typescript
-import { queryClient } from './delivery/(tabs)/config/queryClient';
+import { queryClient } from 'src/features/delivery/config/queryClient';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 // Wrap root Navigator with QueryClientProvider
