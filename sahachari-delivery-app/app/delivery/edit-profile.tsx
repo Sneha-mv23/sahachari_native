@@ -10,14 +10,17 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Colors } from '../../constants/Colors';
 import { styles } from '../../src/features/delivery/styles/EditProfile.styles';
+import { api } from '../../src/services/api';
 
 interface UserData {
   _id: string;
@@ -31,11 +34,15 @@ interface UserData {
 
 export default function EditProfile() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  
+  const [userId, setUserId] = useState<string>('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [pincodes, setPincodes] = useState<string[]>([]);
   const [currentPincode, setCurrentPincode] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadUserData();
@@ -43,13 +50,21 @@ export default function EditProfile() {
   }, []);
 
   const loadUserData = async () => {
-    const stored = await AsyncStorage.getItem('deliveryUser');
-    if (stored) {
-      const u: UserData = JSON.parse(stored);
-      setName(u.name);
-      setEmail(u.email);
-      setPincodes(u.pincodes || []);
-      setPhotoUri((u as any).photo || null);
+    try {
+      const stored = await AsyncStorage.getItem('deliveryUser');
+      if (stored) {
+        const u: UserData = JSON.parse(stored);
+        setUserId(u._id);
+        setName(u.name);
+        setEmail(u.email);
+        setPincodes(u.pincodes || []);
+        setPhotoUri((u as any).photo || null);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,6 +110,35 @@ export default function EditProfile() {
     setPincodes(pincodes.filter((_, i) => i !== index));
   };
 
+  // TODO: Uncomment for API integration
+  /*
+  const updateProfileMutation = useMutation({
+    mutationFn: async (profileData: {
+      name: string;
+      email: string;
+      pincodes: string[];
+      photo?: string | null;
+    }) => {
+      return await api.updateProfile(userId, profileData);
+    },
+    onSuccess: async (updatedData) => {
+      // Update AsyncStorage with new data
+      await AsyncStorage.setItem('deliveryUser', JSON.stringify(updatedData));
+      
+      // Invalidate profile query to refresh data
+      queryClient.invalidateQueries(['profile', userId]);
+      
+      Alert.alert('Success', 'Profile updated successfully!');
+      router.back();
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.message || 'Failed to update profile';
+      console.error('Update profile error:', error);
+      Alert.alert('Error', errorMessage);
+    },
+  });
+  */
+
   const saveProfile = async () => {
     if (!name.trim()) {
       return Alert.alert('Validation', 'Name is required');
@@ -109,6 +153,17 @@ export default function EditProfile() {
       return Alert.alert('Validation', 'Add at least one pincode');
     }
 
+    // TODO: Uncomment for API integration
+    /*
+    updateProfileMutation.mutate({
+      name: name.trim(),
+      email: email.trim(),
+      pincodes,
+      photo: photoUri,
+    });
+    */
+
+    // ========== 🔥 DUMMY IMPLEMENTATION - REMOVE DURING API INTEGRATION 🔥 ==========
     try {
       const existing = await AsyncStorage.getItem('deliveryUser');
       let base: Partial<UserData> = {};
@@ -133,7 +188,19 @@ export default function EditProfile() {
       console.error('Failed to save profile', err);
       Alert.alert('Error', 'Failed to save profile');
     }
+    // ========== END DUMMY IMPLEMENTATION ==========
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]} edges={['top']}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ marginTop: 12, fontSize: 14, color: Colors.text.secondary }}>
+          Loading profile...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -278,13 +345,26 @@ export default function EditProfile() {
               <Text style={styles.btnCancelText}>Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.btn} onPress={saveProfile}>
+            <TouchableOpacity 
+              style={styles.btn} 
+              onPress={saveProfile}
+              // TODO: Uncomment for API integration
+              // disabled={updateProfileMutation.isPending}
+            >
               <LinearGradient
                 colors={['#FF6B35', '#FF8E53']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.btnSaveGradient}
               >
+                {/* TODO: Uncomment for API integration */}
+                {/* {updateProfileMutation.isPending ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.btnSaveText}>Save Changes</Text>
+                )} */}
+                
+                {/* DUMMY - Remove during API integration */}
                 <Text style={styles.btnSaveText}>Save Changes</Text>
               </LinearGradient>
             </TouchableOpacity>

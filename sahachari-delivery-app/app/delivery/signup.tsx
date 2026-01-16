@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
-import { api } from '../../services/api';
+import { api } from '../../src/services/api';
 import { styles } from '../../src/features/delivery/styles/signup.styles';
 
 export default function DeliverySignup() {
@@ -76,7 +76,7 @@ export default function DeliverySignup() {
       name,
       email,
       password,
-      pincodes,
+      pincode: pincodes,
     });
   };
 

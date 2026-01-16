@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL  || 'http://localhost:3000/api';
+const API_BASE_URL = 'http://192.168.2.228:3000';
 
 if (!API_BASE_URL) {
   console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env');
@@ -11,7 +11,8 @@ export interface SignupPayload {
   name: string;
   email: string;
   password: string;
-  serviceablePincode: string[];
+  pincode: string[];
+  role?: string; 
 }
 
 export interface LoginPayload {
@@ -37,6 +38,14 @@ export interface Order {
   status: number; // 0=packing, 1=transit, 2=delivered
   createdAt: string;
   [key: string]: any;
+}
+
+
+export interface UpdateProfilePayload {
+  name: string;
+  email: string;
+  pincodes: string[];
+  photo?: string | null;
 }
 
 export class ApiError extends Error {
@@ -122,8 +131,10 @@ class ApiClient {
    * @returns Promise<AuthUser> - User object with _id
    * @throws ApiError with status and message
    */
-  async signup(credentials: SignupPayload): Promise<AuthUser> {
-    const { data } = await this.client.post<AuthUser>('/delivery/signup', credentials);
+  async signup(credentials: SignupPayload): Promise<AuthUser> {const { data } = await this.client.post<AuthUser>('/delivery/signup', {
+    ...credentials,
+    role: 'DELIVERY',  
+  });
     
     // Store delivery ID and user data
     if (data._id) {
@@ -221,6 +232,19 @@ class ApiClient {
    * Logout user
    * @returns Promise<void>
    */
+
+
+async updateProfile(deliveryId: string, profileData: UpdateProfilePayload): Promise<AuthUser> {
+  const { data } = await this.client.patch<AuthUser>(
+    `/delivery/${deliveryId}/profile`,
+    profileData
+  );
+  
+  // Update stored user data
+  await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
+  
+  return data;
+}
   async logout(): Promise<void> {
     try {
       await this.client.post('/delivery/logout');
