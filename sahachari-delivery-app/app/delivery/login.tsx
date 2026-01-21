@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMutation } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
-  ActivityIndicator,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useMutation } from '@tanstack/react-query';
 
-import { api } from '../../src/services/api';
 import { styles } from '../../src/features/delivery/styles/login.styles';
+import { api } from '../../src/services/api';
 
 export default function DeliveryLogin() {
   const router = useRouter();
@@ -31,7 +31,7 @@ export default function DeliveryLogin() {
   const [password, setPassword] = useState('');
 
   const loginMutation = useMutation({
-    mutationFn: api.login,
+    mutationFn: (credentials: { email: string; password: string }) => api.login(credentials),
     onSuccess: async (user) => {
       await AsyncStorage.multiSet([
         ['deliveryUser', JSON.stringify(user)],
@@ -40,6 +40,7 @@ export default function DeliveryLogin() {
       router.replace('/delivery/(tabs)');
     },
     onError: (error: any) => {
+      console.error('[Login] mutation error:', error);
       Alert.alert('Login Failed', error?.message || 'Invalid email or password');
     },
   });

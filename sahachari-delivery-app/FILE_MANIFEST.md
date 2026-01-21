@@ -59,12 +59,12 @@ process.env.EXPO_PUBLIC_API_URL = 'https://api.example.com'
 
 **API Methods**:
 ```typescript
-orderApiClient.getAvailableOrders()
-orderApiClient.getMyDeliveries(deliveryId)
-orderApiClient.acceptOrder(orderId, deliveryId)
-orderApiClient.updateOrderStatus(orderId, status)
-orderApiClient.getOrderDetails(orderId)
-orderApiClient.healthCheck()
+api.getAvailableOrders()
+api.getAcceptedOrders()
+api.acceptOrder(orderId)
+api.updateOrderStatus(orderId, status)
+api.getOrderDetails(orderId)
+api.healthCheck()
 ```
 
 ---
@@ -77,7 +77,7 @@ orderApiClient.healthCheck()
 - Parallel execution of available orders & my deliveries
 - Optimistic updates with rollback
 - Automatic cache invalidation
-- Fallback to dummy data in development
+- Backend-first: remove dummy data and use real endpoints
 - Conditional enabling based on deliveryId
 
 **When to use**:
@@ -201,7 +201,7 @@ if (isOffline) {
 **Usage**:
 ```typescript
 const { execute, retry, error, canRetry } = useMutationWithErrorRecovery(
-  async () => orderApiClient.acceptOrder(orderId, deliveryId),
+  async () => api.acceptOrder(orderId),
   { maxRetries: 3 }
 );
 

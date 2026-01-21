@@ -1,4 +1,4 @@
-import { Order, DeliveryStage } from './types';
+import { DeliveryStage } from './types';
 
 export const DELIVERY_STAGES: DeliveryStage[] = [
   { status: 3, icon: 'cube-outline', activeLabel: 'Packing', completedLabel: 'Packed' },
@@ -6,53 +6,7 @@ export const DELIVERY_STAGES: DeliveryStage[] = [
   { status: 5, icon: 'checkmark-circle-outline', activeLabel: 'Delivered', completedLabel: 'Delivered' },
 ];
 
-export const DUMMY_AVAILABLE_ORDERS: Order[] = [
-  {
-    _id: 'ORD001ABC',
-    pickupAddress: 'Fresh Mart, MG Road, Kochi',
-    deliveryAddress: '123 Park Street, Kochi 682002',
-    distance: '3.5 km',
-    price: 50,
-    status: 0,
-  },
-  {
-    _id: 'ORD002XYZ',
-    pickupAddress: 'Super Market, Beach Road, Kochi',
-    deliveryAddress: '456 Hill View, Kochi 682001',
-    distance: '5.2 km',
-    price: 70,
-    status: 0,
-  },
-  {
-    _id: 'ORD003LMN',
-    pickupAddress: 'City Store, Palarivattom, Kochi',
-    deliveryAddress: '789 Marine Drive, Kochi 682003',
-    distance: '2.8 km',
-    price: 45,
-    status: 0,
-  },
-];
 
-export const DUMMY_MY_DELIVERIES: Order[] = [
-  {
-    _id: 'ORD004PQR',
-    pickupAddress: 'Grocery Hub, Kakkanad, Kochi',
-    deliveryAddress: '321 Rose Garden, Kochi 682030',
-    distance: '4.1 km',
-    price: 60,
-    status: 1,
-    customerName: 'Rahul Kumar',
-  },
-  {
-    _id: 'ORD005STU',
-    pickupAddress: 'Mini Market, Edappally, Kochi',
-    deliveryAddress: '654 Silver Heights, Kochi 682024',
-    distance: '6.3 km',
-    price: 80,
-    status: 3,
-    customerName: 'Priya Sharma',
-  },
-];
 
 export const COLOR_CONSTANTS = {
   primary: '#FF6B35',

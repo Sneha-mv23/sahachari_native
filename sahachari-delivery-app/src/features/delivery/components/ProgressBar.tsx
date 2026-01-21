@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Order, DeliveryStage } from '../types';
-import { COLOR_CONSTANTS } from '../constants';
+import React, { useState } from 'react';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { progressBarStyles as styles } from '../styles/ProgressBar.styles';
+import { DeliveryStage, Order } from '../types';
 
 interface ProgressBarProps {
   order: Order;
@@ -37,11 +36,12 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       setLoadingStage(null);
     }
   };
+  const safeStages = stages || [];
   return (
     <View style={styles.progressOuterContainer}>
       <Text style={styles.progressTitle}>Delivery Progress</Text>
       <View style={styles.progressBar}>
-        {stages.map((stage, index) => {
+        {safeStages.map((stage, index) => {
           const isCompleted = order.status > stage.status;
           const isCurrent = order.status === stage.status;
           const isNext = order.status === stage.status - 1;
@@ -86,7 +86,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
                 </Text>
               </TouchableOpacity>
 
-              {index < stages.length - 1 && (
+              {index < (safeStages.length - 1) && (
                 <View
                   style={[
                     styles.progressLine,

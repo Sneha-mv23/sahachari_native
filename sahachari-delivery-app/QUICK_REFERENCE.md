@@ -363,7 +363,7 @@ render(<YourComponent />, { wrapper });
 
 ```typescript
 jest.mock('./services/orderApi', () => ({
-  orderApiClient: {
+  api: {
     getAvailableOrders: jest.fn(() =>
       Promise.resolve([
         { id: '1', customerName: 'John', address: 'Main St' },

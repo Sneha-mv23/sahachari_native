@@ -1,20 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Linking,
   ActivityIndicator,
   Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
-// import { api } from '@src/services/api'; // TODO: Uncomment for API
 
 interface Product {
   name: string;
@@ -32,40 +31,21 @@ interface OrderDetails {
   status: number;
 }
 
-// ========== 🔥 DUMMY DATA - REMOVE DURING API INTEGRATION 🔥 ==========
-const DUMMY_ORDER_DETAILS: OrderDetails = {
-  _id: 'ORD003',
-  pickupAddress: 'Demo Shop, MG Road, Kochi',
-  deliveryAddress: '123 Park Street, Kochi 682002',
-  customerName: 'Rahul Kumar',
-  customerPhone: '+91 98765 43210',
-  products: [
-    { name: 'Fresh Tomatoes', quantity: 2 },
-    { name: 'Rice - Basmati', quantity: 1 },
-  ],
-  price: 50,
-  status: 1,
-};
-// ========== END DUMMY DATA ==========
-
 export default function OrderDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  // TODO: Get orderId from params during API integration
-  // const orderId = params.orderId as string;
+  const orderId = params.orderId as string | undefined;
 
-  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(DUMMY_ORDER_DETAILS);
-  const [loading, setLoading] = useState(false);
+  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Uncomment for API integration
-    // loadOrderDetails();
-  }, []);
+    if (orderId) loadOrderDetails();
+  }, [orderId]);
 
-  // TODO: Uncomment for API integration
-  /*
   const loadOrderDetails = async () => {
+    if (!orderId) return;
     try {
       setLoading(true);
       const data = await api.getOrderDetails(orderId);
@@ -77,7 +57,7 @@ export default function OrderDetailsScreen() {
       setLoading(false);
     }
   };
-  */
+
 
   const handleStartNavigation = () => {
     if (!orderDetails) return;

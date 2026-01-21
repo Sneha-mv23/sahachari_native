@@ -1,7 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { orderQueryKeys } from './useOrdersQuery';
-import { orderApiClient } from '../services/orderApi';
 
 /**
  * Hook to prefetch orders data
@@ -15,7 +13,7 @@ export const usePrefetchOrders = () => {
     try {
       await queryClient.prefetchQuery({
         queryKey: orderQueryKeys.available(),
-        queryFn: () => orderApiClient.getAvailableOrders(),
+        queryFn: () => api.getAvailableOrders(),
         staleTime: 1000 * 30, // 30 seconds
       });
     } catch (error) {
@@ -28,7 +26,7 @@ export const usePrefetchOrders = () => {
     try {
       await queryClient.prefetchQuery({
         queryKey: orderQueryKeys.myDeliveries(deliveryId),
-        queryFn: () => orderApiClient.getMyDeliveries(deliveryId),
+        queryFn: () => api.getAcceptedOrders(),
         staleTime: 1000 * 30, // 30 seconds
       });
     } catch (error) {
@@ -40,7 +38,7 @@ export const usePrefetchOrders = () => {
     try {
       await queryClient.prefetchQuery({
         queryKey: orderQueryKeys.detail(orderId),
-        queryFn: () => orderApiClient.getOrderDetails(orderId),
+        queryFn: () => api.getOrderDetails(orderId),
         staleTime: 1000 * 60, // 1 minute
       });
     } catch (error) {

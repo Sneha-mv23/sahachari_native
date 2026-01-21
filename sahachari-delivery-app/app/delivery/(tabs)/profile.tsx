@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -12,9 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
-import EditProfile from '../edit-profile';
-// import { api, getDeliveryId } from '@src/services/api'; // TODO: Uncomment for API
-const router = useRouter();
+import { api } from '../../../src/services/api';
+
 interface UserData {
   _id: string;
   name: string;
@@ -24,49 +24,56 @@ interface UserData {
   totalEarnings: number;
 }
 
-// ========== 🔥 DUMMY DATA - REMOVE DURING API INTEGRATION 🔥 ==========
-const DUMMY_USER_DATA: UserData = {
-  _id: 'USER123ABC',
-  name: 'Demo Driver',
-  email: 'driver@sahachari.com',
-  pincodes: ['682001', '682002', '682003', '682011'],
-  totalDeliveries: 127,
-  totalEarnings: 6350,
-};
-// ========== END DUMMY DATA ==========
-
 export default function Profile() {
   const router = useRouter();
 
-  // TODO: During API integration, initialize as null: useState<UserData | null>(null)
-  const [userData, setUserData] = useState<UserData | null>(DUMMY_USER_DATA);
-  const [loading, setLoading] = useState(false); // Changed to false for dummy data
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Uncomment for API integration
-    // loadProfile();
+    loadProfile();
   }, []);
 
-  // TODO: Uncomment for API integration
-  /*
   const loadProfile = async () => {
     try {
-      const deliveryId = await getDeliveryId();
-      if (!deliveryId) {
-        Alert.alert('Error', 'User not logged in');
-        return;
+      setLoading(true);
+
+      // Try fetching fresh profile from backend first
+      try {
+        const profile = await api.getProfile();
+        if (profile) {
+          // Map API shape to local UserData shape safely
+          const mapped = {
+            _id: (profile as any)._id || (profile as any).id || '',
+            name: profile.name || '',
+            email: profile.email || '',
+            pincodes: (profile as any).pincodes || [],
+            totalDeliveries: (profile as any).totalDeliveries || 0,
+            totalEarnings: (profile as any).totalEarnings || 0,
+            photo: (profile as any).photo || null,
+          };
+          setUserData(mapped);
+          await AsyncStorage.setItem('deliveryUser', JSON.stringify(mapped));
+          return;
+        }
+      } catch (apiError) {
+        console.warn('Failed to load profile from API, falling back to cache:', apiError);
       }
 
-      const profile = await api.getProfile(deliveryId);
-      setUserData(profile);
+      // Fallback to cached profile
+      const stored = await AsyncStorage.getItem('deliveryUser');
+      if (stored) {
+        setUserData(JSON.parse(stored));
+      }
     } catch (error) {
       console.error('Profile load error:', error);
-      Alert.alert('Error', 'Failed to load profile');
     } finally {
       setLoading(false);
     }
   };
-  */
+
+  // (Optional) provide a refresh or edit flow that calls API to update profile
+
 
   const handleLogout = async () => {
     // (Optional) clear auth data
@@ -163,8 +170,8 @@ export default function Profile() {
             <Text style={styles.sectionTitle}>Serviceable Areas</Text>
           </View>
           <View style={styles.pincodeList}>
-            {userData.pincodes.length > 0 ? (
-              userData.pincodes.map((pincode, index) => (
+            {(userData?.pincodes?.length || 0) > 0 ? (
+              (userData.pincodes || []).map((pincode, index) => (
                 <View key={index} style={styles.pincodeChip}>
                   <Ionicons name="location-outline" size={14} color={Colors.primary} />
                   <Text style={styles.pincodeText}>{pincode}</Text>
@@ -178,22 +185,22 @@ export default function Profile() {
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
-                      <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => router.push('/delivery/edit-profile')}
-            >
-              <View style={styles.actionIconCircle}>
-                <Ionicons name="create-outline" size={20} color={Colors.primary} />
-              </View>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push('/delivery/edit-profile')}
+          >
+            <View style={styles.actionIconCircle}>
+              <Ionicons name="create-outline" size={20} color={Colors.primary} />
+            </View>
 
-              <Text style={styles.actionButtonText}>Edit Profile</Text>
+            <Text style={styles.actionButtonText}>Edit Profile</Text>
 
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={Colors.text.light}
-              />
-            </TouchableOpacity>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={Colors.text.light}
+            />
+          </TouchableOpacity>
 
 
         </View>

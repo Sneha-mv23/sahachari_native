@@ -1,6 +1,7 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SnackbarProvider } from 'src/components/ui/Snackbar';
 
 const queryClient = new QueryClient();
 
@@ -9,11 +10,14 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="login" />
-          <Stack.Screen name="delivery" />
-        </Stack>
-        <StatusBar style="auto" />
+        {/* SnackbarProvider provides a global show() toasts */}
+        <SnackbarProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="login" />
+            <Stack.Screen name="delivery" />
+          </Stack>
+          <StatusBar style="auto" />
+        </SnackbarProvider>
       </>
     </QueryClientProvider>
   );

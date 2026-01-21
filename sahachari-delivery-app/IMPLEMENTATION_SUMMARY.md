@@ -64,8 +64,8 @@ sahachari-delivery-app/
   - 5 main methods: getAvailableOrders, getMyDeliveries, acceptOrder, updateOrderStatus, getOrderDetails
   - Health check endpoint
   - Prepared for token-based authentication
-- **Key Classes**: `OrderApiClient`, `ApiError`
-- **Exports**: `orderApiClient` singleton
+- **Key Classes**: `ApiClient` (centralized), `ApiError`
+- **Exports**: `api` singleton (use `api` for all API calls)
 
 #### 2. **`config/queryClient.ts`** ✅
 - **Purpose**: Centralized React Query configuration
@@ -86,7 +86,7 @@ sahachari-delivery-app/
   - **Optimistic Updates**: Updates cache before server response
   - **Error Rollback**: Restores previous data on mutation failure
   - **Conditional Enabling**: Only fetches when `deliveryId` is available
-  - **Fallback to Dummy Data**: Works offline or without backend
+  - **Backend-first mode**: Uses real backend endpoints (no dummy fallback)
 - **Exports**:
   - `orderQueryKeys` - Query key factory
   - `useOrdersQuery(deliveryId?)` - Get available & my deliveries
@@ -175,7 +175,7 @@ sahachari-delivery-app/
 - DELIVERY_STAGES configuration
 - COLOR_CONSTANTS for consistent styling
 - EMPTY_STATE messages
-- DUMMY data for development/offline
+- Remove legacy dummy data and rely on backend endpoints for production and testing
 
 ### Documentation
 
@@ -241,7 +241,7 @@ onError: (error, data, context) => {
 ```typescript
 useQuery({
   queryKey: orderQueryKeys.myDeliveries(deliveryId || ''),
-  queryFn: () => orderApiClient.getMyDeliveries(deliveryId!),
+  queryFn: () => api.getAcceptedOrders(),
   enabled: !!deliveryId,  // Only runs when deliveryId exists
 })
 ```

@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 
+import { useMutation } from '@tanstack/react-query';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -14,9 +15,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useMutation } from '@tanstack/react-query';
-import { api } from '../../src/services/api';
 import { styles } from '../../src/features/delivery/styles/signup.styles';
+import { api } from '../../src/services/api';
 
 export default function DeliverySignup() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function DeliverySignup() {
 
   // 🔹 TanStack mutation
   const signupMutation = useMutation({
-    mutationFn: api.signup,
+    mutationFn: (payload: any) => api.signup(payload),
     onSuccess: async (res) => {
       await AsyncStorage.setItem('deliveryUser', JSON.stringify(res));
       Alert.alert('Success', 'Account created successfully');
@@ -39,6 +39,7 @@ export default function DeliverySignup() {
       router.back();
     },
     onError: (error: any) => {
+      console.error('[Signup] mutation error:', error);
       const msg = error?.message || 'Signup failed. Please try again.';
       Alert.alert('Error', msg);
       setStatusMessage(msg);

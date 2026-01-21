@@ -25,15 +25,19 @@ The `OrderApiClient` class encapsulates all HTTP communication with the backend:
 // - Request/response logging
 // - Timeout management
 
-const orderApiClient = new OrderApiClient();
+// Previously: const orderApiClient = new OrderApiClient();
+// Use the central `api` client exported from `src/services/api.ts` instead (e.g., `api.getAvailableOrders()`)
 ```
 
 **Endpoints:**
-- `getAvailableOrders()` - GET /orders/available
-- `getMyDeliveries(deliveryId)` - GET /deliveries/{deliveryId}/orders
-- `acceptOrder(orderId, deliveryId)` - POST /orders/{orderId}/accept
-- `updateOrderStatus(orderId, status)` - PATCH /orders/{orderId}
-- `getOrderDetails(orderId)` - GET /orders/{orderId}
+- `getAvailableOrders()` - GET /delivery/orders (or /delivery/get-orders for legacy backends)
+- `getMyDeliveries(deliveryId)` - GET /delivery/orders/me (or /delivery/get-added-orders?id={deliveryId} legacy)
+- `acceptOrder(orderId)` - POST /delivery/orders/{orderId}/accept
+- `pickUpOrder(orderId)` - POST /delivery/orders/{orderId}/pickup
+- `deliverOrder(orderId)` - POST /delivery/orders/{orderId}/deliver
+- `failOrder(orderId)` - POST /delivery/orders/{orderId}/fail
+- `updateOrderStatus(orderId, status)` - PATCH /delivery/orders/{orderId} (generic)
+- `getOrderDetails(orderId)` - GET /delivery/orders/{orderId}
 - `healthCheck()` - GET /health
 
 ### 2. Query Management (`hooks/useOrdersQuery.ts`)
@@ -124,7 +128,7 @@ const { isOnline, isOffline } = useNetworkStatus();
 #### `useMutationWithErrorRecovery` - Better Error Handling
 ```typescript
 const { execute, retry, isPending, error, canRetry } = useMutationWithErrorRecovery(
-  async () => await orderApiClient.acceptOrder(orderId, deliveryId),
+  async () => await api.acceptOrder(orderId),
   {
     maxRetries: 3,
     onError: (error) => console.error(error),
@@ -204,7 +208,7 @@ Only fetch when necessary:
 ```typescript
 useQuery({
   queryKey: orderQueryKeys.myDeliveries(deliveryId || ''),
-  queryFn: () => orderApiClient.getMyDeliveries(deliveryId!),
+  queryFn: () => api.getAcceptedOrders(),
   enabled: !!deliveryId,  // Only runs when deliveryId is truthy
 });
 ```
@@ -280,7 +284,7 @@ useEffect(() => {
 ```typescript
 const { data, hasNextPage, fetchNextPage } = useInfiniteQuery({
   queryKey: orderQueryKeys.all,
-  queryFn: ({ pageParam }) => orderApiClient.getOrders(pageParam),
+  queryFn: ({ pageParam }) => api.getOrders ? api.getOrders(pageParam) : Promise.resolve([]),
   getNextPageParam: (lastPage) => lastPage.nextCursor,
 });
 ```
@@ -290,12 +294,12 @@ const { data, hasNextPage, fetchNextPage } = useInfiniteQuery({
 // Both queries run in parallel
 const availableOrders = useQuery({
   queryKey: orderQueryKeys.available(),
-  queryFn: orderApiClient.getAvailableOrders,
+  queryFn: api.getAvailableOrders,
 });
 
 const myDeliveries = useQuery({
   queryKey: orderQueryKeys.myDeliveries(deliveryId),
-  queryFn: () => orderApiClient.getMyDeliveries(deliveryId),
+  queryFn: () => api.getAcceptedOrders(),
   enabled: !!deliveryId,
 });
 

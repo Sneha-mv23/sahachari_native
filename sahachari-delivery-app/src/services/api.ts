@@ -1,10 +1,11 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios, { AxiosError, AxiosInstance } from 'axios';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const EXPO_API_URL = process.env.EXPO_PUBLIC_API_URL;
+const API_BASE_URL = EXPO_API_URL || 'http://localhost:3000';
 
-if (!API_BASE_URL) {
-  console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env');
+if (!EXPO_API_URL) {
+  console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env — using http://localhost:3000');
 }
 
 export interface SignupPayload {
@@ -12,7 +13,7 @@ export interface SignupPayload {
   email: string;
   password: string;
   //pincode: string[];
-  role?: string; 
+  role?: string;
 }
 
 export interface LoginPayload {
@@ -131,17 +132,21 @@ class ApiClient {
    * @returns Promise<AuthUser> - User object with _id
    * @throws ApiError with status and message
    */
-  async signup(credentials: SignupPayload): Promise<AuthUser> {const { data } = await this.client.post<AuthUser>('/auth/register/delivery', {
-    ...credentials,
-    role: 'DELIVERY',  
-  });
-    
+  async signup(credentials: SignupPayload): Promise<AuthUser> {
+    // Do not send 'role' from client; backend assigns based on route
+    const { data } = await this.client.post<AuthUser>('/auth/register/delivery', credentials);
+
     // Store delivery ID and user data
     if (data._id) {
       await AsyncStorage.setItem('deliveryId', data._id);
       await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
+      // Save auth token if provided by server
+      if ((data as any).token) {
+        await AsyncStorage.setItem('token', (data as any).token);
+        await AsyncStorage.setItem('isLoggedIn', 'true');
+      }
     }
-    
+
     return data;
   }
 
@@ -153,13 +158,18 @@ class ApiClient {
    */
   async login(credentials: LoginPayload): Promise<AuthUser> {
     const { data } = await this.client.post<AuthUser>('/auth/login', credentials);
-    
+
     // Store delivery ID and user data
     if (data._id) {
       await AsyncStorage.setItem('deliveryId', data._id);
       await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
+      // Save auth token if provided
+      if ((data as any).token) {
+        await AsyncStorage.setItem('token', (data as any).token);
+        await AsyncStorage.setItem('isLoggedIn', 'true');
+      }
     }
-    
+
     return data;
   }
 
@@ -168,8 +178,8 @@ class ApiClient {
    * @returns Promise<Order[]> - List of available orders
    * @throws ApiError with status and message
    */
-  async getAvailableOrders(): Promise<Order[]> {
-    const { data } = await this.client.get<Order[]>('/delivery/orders');
+  async getAvailableOrders(status: string = 'READY'): Promise<Order[]> {
+    const { data } = await this.client.get<Order[]>('/delivery/orders', { params: { status } });
     return data;
   }
 
@@ -181,9 +191,9 @@ class ApiClient {
    * @throws ApiError with status and message
    */
   async acceptOrder(orderId: string): Promise<any> {
-  const { data } = await this.client.post(`/delivery/orders/${orderId}/accept`, {});
-  return data;
-}
+    const { data } = await this.client.post(`/delivery/orders/${orderId}/accept`, {});
+    return data;
+  }
 
   /**
    * Get accepted orders for a delivery person
@@ -192,9 +202,9 @@ class ApiClient {
    * @throws ApiError with status and message
    */
   async getAcceptedOrders(): Promise<Order[]> {
-  const { data } = await this.client.get<Order[]>('/delivery/orders/me');
-  return data;
-}
+    const { data } = await this.client.get<Order[]>('/delivery/orders/me');
+    return data;
+  }
 
   /**
    * Mark order as picked up
@@ -207,6 +217,11 @@ class ApiClient {
     return data;
   }
 
+  // Alias for feature client naming consistency
+  async pickUpOrder(orderId: string): Promise<any> {
+    return this.markOrderPickedUp(orderId);
+  }
+
   /**
    * Update order delivery status
    * @param orderId - ID of the order
@@ -215,14 +230,30 @@ class ApiClient {
    * @throws ApiError with status and message
    */
   async deliverOrder(orderId: string): Promise<any> {
-  const { data } = await this.client.post(`/delivery/orders/${orderId}/deliver`, {});
-  return data;
-}
+    const { data } = await this.client.post(`/delivery/orders/${orderId}/deliver`, {});
+    return data;
+  }
 
-async failOrder(orderId: string): Promise<any> {
-  const { data } = await this.client.post(`/delivery/orders/${orderId}/fail`, {});
-  return data;
-}
+  async failOrder(orderId: string): Promise<any> {
+    const { data } = await this.client.post(`/delivery/orders/${orderId}/fail`, {});
+    return data;
+  }
+
+  /**
+   * Generic status update endpoint (PATCH)
+   */
+  async updateOrderStatus(orderId: string, status: number): Promise<any> {
+    const { data } = await this.client.patch(`/delivery/orders/${orderId}`, { status });
+    return data;
+  }
+
+  /**
+   * Get order details
+   */
+  async getOrderDetails(orderId: string): Promise<Order> {
+    const { data } = await this.client.get<Order>(`/delivery/orders/${orderId}`);
+    return data;
+  }
 
   /**
    * Logout user
@@ -230,17 +261,31 @@ async failOrder(orderId: string): Promise<any> {
    */
 
 
-async updateProfile(deliveryId: string, profileData: UpdateProfilePayload): Promise<AuthUser> {
-  const { data } = await this.client.patch<AuthUser>(
-    `/delivery/${deliveryId}/profile`,
-    profileData
-  );
-  
-  // Update stored user data
-  await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
-  
-  return data;
-}
+  async updateProfile(deliveryId: string, profileData: UpdateProfilePayload): Promise<AuthUser> {
+    // Prefer authenticated user endpoint
+    try {
+      const { data } = await this.client.patch<AuthUser>('/users/me', profileData);
+      await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
+      return data;
+    } catch (err) {
+      // Fallback to delivery-specific endpoint if server expects it
+      const { data } = await this.client.patch<AuthUser>(`/delivery/${deliveryId}/profile`, profileData);
+      await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
+      return data;
+    }
+  }
+
+  /**
+   * Get the authenticated user's profile
+   * Calls `GET /users/me` and updates AsyncStorage cache
+   */
+  async getProfile(): Promise<AuthUser> {
+    const { data } = await this.client.get<AuthUser>('/users/me');
+    if (data) {
+      await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
+    }
+    return data;
+  }
   async logout(): Promise<void> {
     try {
       await this.client.post('/delivery/logout');

@@ -1,18 +1,20 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
+import { api } from '../../../src/services/api';
 // import { api, getDeliveryId } from '@src/services/api'; // TODO: Uncomment for API
 
 interface DeliveryHistoryItem {
@@ -22,80 +24,41 @@ interface DeliveryHistoryItem {
   deliveredAt: string;
 }
 
-// ========== 🔥 DUMMY DATA - REMOVE DURING API INTEGRATION 🔥 ==========
-const DUMMY_HISTORY: DeliveryHistoryItem[] = [
-  {
-    _id: 'ORD101ABC',
-    deliveryAddress: '123 Park Street, Kochi 682002',
-    price: 50,
-    deliveredAt: '2024-12-31T10:30:00Z',
-  },
-  {
-    _id: 'ORD102XYZ',
-    deliveryAddress: '456 Beach Road, Kochi 682001',
-    price: 70,
-    deliveredAt: '2024-12-31T14:15:00Z',
-  },
-  {
-    _id: 'ORD103LMN',
-    deliveryAddress: '789 Hill View, Kochi 682003',
-    price: 60,
-    deliveredAt: '2024-12-30T09:45:00Z',
-  },
-  {
-    _id: 'ORD104PQR',
-    deliveryAddress: '321 MG Road, Kochi 682011',
-    price: 55,
-    deliveredAt: '2024-12-29T16:20:00Z',
-  },
-  {
-    _id: 'ORD105STU',
-    deliveryAddress: '654 Marine Drive, Kochi 682031',
-    price: 80,
-    deliveredAt: '2024-12-28T11:00:00Z',
-  },
-  {
-    _id: 'ORD106VWX',
-    deliveryAddress: '987 Rose Garden, Kochi 682024',
-    price: 45,
-    deliveredAt: '2024-12-25T13:30:00Z',
-  },
-];
-
-// ========== END DUMMY DATA ==========
-
 export default function DeliveryHistory() {
   const router = useRouter();
 
-  // TODO: During API integration, initialize as empty array: useState<DeliveryHistoryItem[]>([])
-  const [history, setHistory] = useState<DeliveryHistoryItem[]>(DUMMY_HISTORY);
-  const [loading, setLoading] = useState(false); // Changed to false for dummy data
+  const [history, setHistory] = useState<DeliveryHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [weekEarnings, setWeekEarnings] = useState(0);
   const [monthEarnings, setMonthEarnings] = useState(0);
 
   useEffect(() => {
-    // TODO: Uncomment for API integration
-    // loadHistory();
-
-    // Calculate earnings from dummy data
-    calculateEarnings(DUMMY_HISTORY);
+    loadHistory();
   }, []);
 
-  // TODO: Uncomment for API integration
-  /*
   const loadHistory = async () => {
     try {
-      const deliveryId = await getDeliveryId();
+      setLoading(true);
+      const deliveryUserRaw = await AsyncStorage.getItem('deliveryUser');
+      let deliveryId = '';
+      if (deliveryUserRaw) {
+        const parsed = JSON.parse(deliveryUserRaw);
+        deliveryId = parsed?._id || parsed?.id || '';
+      }
       if (!deliveryId) {
-        Alert.alert('Error', 'User not logged in');
+        // No delivery ID available; show empty history
+        setHistory([]);
+        calculateEarnings([]);
         return;
       }
 
-      const data = await api.getDeliveryHistory(deliveryId);
-      setHistory(data);
-      calculateEarnings(data);
+      // Try to fetch deliveries; filter to completed/delivered items
+      const all = await api.getAcceptedOrders();
+      const completed = (all || []).filter((item) => item.status >= 2);
+      setHistory(completed);
+      calculateEarnings(completed);
     } catch (error) {
       console.error('Load history error:', error);
       Alert.alert('Error', 'Failed to load delivery history');
@@ -103,7 +66,7 @@ export default function DeliveryHistory() {
       setLoading(false);
     }
   };
-  */
+
 
   const calculateEarnings = (data: DeliveryHistoryItem[]) => {
     const now = new Date();

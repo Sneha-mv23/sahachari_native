@@ -1,8 +1,20 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { showGlobalSnackbar } from 'src/components/ui/Snackbar';
+import { api, Order as ApiOrder } from 'src/services/api';
 import { Order } from '../types';
-import { orderApiClient } from '../services/orderApi';
-import { DUMMY_AVAILABLE_ORDERS, DUMMY_MY_DELIVERIES } from '../constants';
+
+// Map API order shape to feature Order shape
+const mapApiOrder = (a: ApiOrder): Order => ({
+  _id: a._id,
+  pickupAddress: (a as any).pickupAddress || (a as any).pickupLocation || '',
+  deliveryAddress: (a as any).deliveryAddress || (a as any).deliveryLocation || '',
+  distance: (a as any).distance || `${((a as any).distanceKm ?? '')}` || '',
+  price: (a as any).price ?? (a as any).amount ?? 0,
+  status: a.status,
+  customerName: a.customerName || (a as any).customer?.name || undefined,
+});
+
 
 // Query keys for React Query
 export const orderQueryKeys = {
@@ -21,43 +33,41 @@ interface UseOrdersQueryReturn {
   refetch: () => void;
 }
 
-export const useOrdersQuery = (
-  initialAvailable: Order[] = DUMMY_AVAILABLE_ORDERS,
-  initialMyDeliveries: Order[] = DUMMY_MY_DELIVERIES,
-  deliveryId?: string
-): UseOrdersQueryReturn => {
-  // Fetch available orders
+export const useOrdersQuery = (deliveryId?: string): UseOrdersQueryReturn => {
+  // Fetch available orders from API
   const {
-    data: availableOrders = initialAvailable,
+    data: availableOrders = [],
     isLoading: isLoadingAvailable,
     error: errorAvailable,
     refetch: refetchAvailable,
   } = useQuery({
     queryKey: orderQueryKeys.available(),
     queryFn: async () => {
-      console.log('[useOrdersQuery] Loading dummy available orders');
-      return initialAvailable;
+      const data = await api.getAvailableOrders();
+      return (data || []).map(mapApiOrder);
     },
     enabled: true,
-    staleTime: Infinity,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 1,
   });
 
-  // Fetch my deliveries
+  // Fetch my deliveries only when deliveryId is available
   const {
-    data: myDeliveries = initialMyDeliveries,
+    data: myDeliveries = [],
     isLoading: isLoadingMyDeliveries,
     refetch: refetchMyDeliveries,
     error: errorMyDeliveries,
   } = useQuery({
     queryKey: deliveryId ? orderQueryKeys.myDeliveries(deliveryId) : ['orders', 'myDeliveries'],
     queryFn: async () => {
-      console.log('[useOrdersQuery] Loading dummy my deliveries');
-      return initialMyDeliveries;
+      if (!deliveryId) return [];
+      // Use token-based endpoint to get deliveries for the authenticated user
+      const data = await api.getAcceptedOrders();
+      return (data || []).map(mapApiOrder);
     },
-    enabled: true,
-    staleTime: Infinity,
+    enabled: !!deliveryId,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 1,
   });
@@ -90,17 +100,18 @@ interface UseOrderMutationsReturn {
 export const useOrderMutations = (deliveryId?: string): UseOrderMutationsReturn => {
   const queryClient = useQueryClient();
 
-  // Accept order mutation
+  // Accept order mutation - calls server endpoint to accept by orderId
   const acceptOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      console.log('[acceptOrder] Starting mutation with deliveryId:', deliveryId);
-      console.log('[acceptOrder] Using dummy data mode');
-      return { _id: orderId, status: 1 } as Order;
+      console.log('[acceptOrder] Calling API to accept order:', orderId);
+      const res = await api.acceptOrder(orderId);
+      return mapApiOrder(res as ApiOrder);
     },
+
     onMutate: async (orderId: string) => {
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: orderQueryKeys.available() });
-      
+
       // Get previous available orders
       const previousAvailable = queryClient.getQueryData(orderQueryKeys.available());
 
@@ -109,11 +120,10 @@ export const useOrderMutations = (deliveryId?: string): UseOrderMutationsReturn 
         return old?.filter((order) => order._id !== orderId) || [];
       });
 
-      // Add to my deliveries (use a dummy deliveryId for query key if needed)
+      // Add to my deliveries (query key uses deliveryId when available)
       const myDeliveryKey = deliveryId ? orderQueryKeys.myDeliveries(deliveryId) : ['orders', 'myDeliveries'];
-      
+
       // Get the full order object from available orders
-      const availableOrders = queryClient.getQueryData<Order[]>(orderQueryKeys.available()) || [];
       const acceptedOrder = (previousAvailable as Order[] | undefined)?.find(o => o._id === orderId);
 
       if (acceptedOrder) {
@@ -138,31 +148,33 @@ export const useOrderMutations = (deliveryId?: string): UseOrderMutationsReturn 
     },
   });
 
+
   // Update order status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: number }) => {
-      console.log('[updateStatus] Updating order:', orderId, 'to status:', status);
-      // Save the status update to AsyncStorage
-      // try {
-      //   const saved = await AsyncStorage.getItem('orderStatusUpdates');
-      //   const statusUpdates = saved ? JSON.parse(saved) : {};
-      //   statusUpdates[orderId] = status;
-      //   await AsyncStorage.setItem('orderStatusUpdates', JSON.stringify(statusUpdates));
-      //   console.log('[updateStatus] Saved status update:', statusUpdates);
-      // } catch (error) {
-      //   console.error('[updateStatus] Error saving status:', error);
-      // }
-      return { _id: orderId, status } as Order;
+      console.log('[updateStatus] Calling API for order:', orderId, 'status:', status);
+      let res: ApiOrder;
+      if (status === 2) {
+        // Deliver
+        res = await api.deliverOrder(orderId) as ApiOrder;
+      } else if (status === -1) {
+        // Fail
+        res = await api.failOrder(orderId) as ApiOrder;
+      } else {
+        // Generic status update via PATCH
+        res = await api.updateOrderStatus(orderId, status) as ApiOrder;
+      }
+      return mapApiOrder(res);
     },
     onMutate: async ({ orderId, status }) => {
       console.log('[updateStatus] onMutate: Updating order', orderId, 'to status', status);
-      
+
       // Update in both available orders and my deliveries
       const availableKey = orderQueryKeys.available();
       const myDeliveryKey = deliveryId ? orderQueryKeys.myDeliveries(deliveryId) : ['orders', 'myDeliveries'];
-      
+
       console.log('[updateStatus] Using keys - available:', availableKey, 'myDeliveries:', myDeliveryKey);
-      
+
       await queryClient.cancelQueries({ queryKey: availableKey });
       await queryClient.cancelQueries({ queryKey: myDeliveryKey });
 
@@ -205,17 +217,29 @@ export const useOrderMutations = (deliveryId?: string): UseOrderMutationsReturn 
     },
   });
 
+  // Use the global snackbar API for non-render contexts (safe even outside React render)
+
   const handleAcceptOrder = async (orderId: string) => {
-    await acceptOrderMutation.mutateAsync(orderId);
+    try {
+      const deliveryIdStored = await AsyncStorage.getItem('deliveryId');
+      await acceptOrderMutation.mutateAsync(orderId);
+      showGlobalSnackbar('Order accepted');
+    } catch (error) {
+      console.error('[handleAcceptOrder] Error:', error);
+      showGlobalSnackbar('Failed to accept order');
+    }
   };
 
   const handlePickedUp = async (orderId: string) => {
     try {
       console.log('[handlePickedUp] Called with orderId:', orderId);
+      await api.pickUpOrder(orderId);
       await updateStatusMutation.mutateAsync({ orderId, status: 2 });
+      showGlobalSnackbar('Marked as picked up');
       console.log('[handlePickedUp] Success');
     } catch (error) {
       console.error('[handlePickedUp] Error:', error);
+      showGlobalSnackbar('Failed to mark as picked up');
     }
   };
 
@@ -223,9 +247,13 @@ export const useOrderMutations = (deliveryId?: string): UseOrderMutationsReturn 
     try {
       console.log('[handleUpdateProgress] Called with orderId:', orderId, 'status:', status);
       await updateStatusMutation.mutateAsync({ orderId, status });
+      if (status === 2) showGlobalSnackbar('Delivery completed');
+      else if (status === -1) showGlobalSnackbar('Marked as failed');
+      else showGlobalSnackbar('Status updated');
       console.log('[handleUpdateProgress] Success');
     } catch (error) {
       console.error('[handleUpdateProgress] Error:', error);
+      showGlobalSnackbar('Failed to update status');
     }
   };
 

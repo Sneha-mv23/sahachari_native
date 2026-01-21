@@ -1,32 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
+  Alert,
+  RefreshControl,
+  ScrollView,
   Text,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  RefreshControl,
-  Alert,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '../../../constants/Colors';
-import { Order, TabType } from 'src/features/delivery/types';
-import {
-  DELIVERY_STAGES,
-  DUMMY_AVAILABLE_ORDERS,
-  DUMMY_MY_DELIVERIES,
-  COLOR_CONSTANTS,
-  EMPTY_STATE,
-} from '../../../src/features/delivery/constants';
-import { useOrdersQuery, useOrderMutations } from '../../../src/features/delivery/hooks/useOrdersQuery';
-import { useOrderActions } from '../../../src/features/delivery/hooks/useOrderActions';
-import { AvailableOrderCard } from '../../../src/features/delivery/components/AvailableOrderCard';
 import { MyDeliveryCard } from '@src/features/delivery/components/MyDeliveryCard';
 import { styles } from 'src/features/delivery/styles/index.styles';
+import { TabType } from 'src/features/delivery/types';
+import { Colors } from '../../../constants/Colors';
+import { AvailableOrderCard } from '../../../src/features/delivery/components/AvailableOrderCard';
+import { COLOR_CONSTANTS, DELIVERY_STAGES, EMPTY_STATE } from '../../../src/features/delivery/constants';
+import { useOrderActions } from '../../../src/features/delivery/hooks/useOrderActions';
+import { useOrderMutations, useOrdersQuery } from '../../../src/features/delivery/hooks/useOrdersQuery';
 
 export default function AvailableOrders() {
   const router = useRouter();
@@ -78,17 +71,15 @@ export default function AvailableOrders() {
     // };
     // loadAcceptedOrders();
 
-    console.log('[useEffect] Dummy data mode - no AsyncStorage');
+    console.log('[useEffect] Initialized delivery tab');
   }, []);
 
   const { availableOrders, myDeliveries, isLoading, isError, error, refetch } = useOrdersQuery(
-    DUMMY_AVAILABLE_ORDERS,
-    DUMMY_MY_DELIVERIES,
     deliveryId
   );
 
-  console.log('[AvailableOrders] Available Orders:', availableOrders.length);
-  console.log('[AvailableOrders] My Deliveries:', myDeliveries.length);
+  console.log('[AvailableOrders] Available Orders:', availableOrders?.length ?? 0);
+  console.log('[AvailableOrders] My Deliveries:', myDeliveries?.length ?? 0);
   console.log('[AvailableOrders] Accepted Orders:', acceptedOrders);
 
   const { handleAcceptOrder, handlePickedUp, handleUpdateProgress, isUpdating, acceptError, updateError } =
@@ -98,7 +89,7 @@ export default function AvailableOrders() {
 
   useEffect(() => {
     // Refetch when deliveryId is set or component mounts
-    // Always refetch to ensure dummy data is loaded
+    // Always refetch to ensure data is up to date
     console.log('[useEffect] Refetching orders, deliveryId:', deliveryId);
     refetch();
   }, [deliveryId, refetch]);
@@ -214,8 +205,8 @@ export default function AvailableOrders() {
         }
       >
         {activeTab === 'available' ? (
-          availableOrders.length > 0 ? (
-            availableOrders
+          (availableOrders?.length || 0) > 0 ? (
+            (availableOrders || [])
               .filter((order) => !acceptedOrders.includes(order._id))
               .map((order) => (
                 <AvailableOrderCard
@@ -230,7 +221,7 @@ export default function AvailableOrders() {
                       const newAcceptedOrders = [...acceptedOrders, accepted._id];
                       setAcceptedOrders(newAcceptedOrders);
                       // AsyncStorage.setItem('acceptedOrderIds', JSON.stringify(newAcceptedOrders));
-                      // For dummy data, we don't need a real deliveryId
+                      // Local state: acceptedOrders tracked in-memory while backend syncs
                       handleAcceptOrder(accepted._id);
                       setActiveTab('my-deliveries');
                     } catch (error) {
@@ -253,8 +244,8 @@ export default function AvailableOrders() {
             );
             const allDeliveries = [...myDeliveries, ...acceptedOrdersData];
 
-            return allDeliveries.length > 0 ? (
-              allDeliveries.map((order) => (
+            return (allDeliveries?.length || 0) > 0 ? (
+              (allDeliveries || []).map((order) => (
                 <MyDeliveryCard
                   key={order._id}
                   order={order}
