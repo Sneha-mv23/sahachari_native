@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://192.168.2.228:3000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 if (!API_BASE_URL) {
   console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env');
@@ -11,7 +11,7 @@ export interface SignupPayload {
   name: string;
   email: string;
   password: string;
-  pincode: string[];
+  //pincode: string[];
   role?: string; 
 }
 
@@ -131,7 +131,7 @@ class ApiClient {
    * @returns Promise<AuthUser> - User object with _id
    * @throws ApiError with status and message
    */
-  async signup(credentials: SignupPayload): Promise<AuthUser> {const { data } = await this.client.post<AuthUser>('/delivery/signup', {
+  async signup(credentials: SignupPayload): Promise<AuthUser> {const { data } = await this.client.post<AuthUser>('/auth/register/delivery', {
     ...credentials,
     role: 'DELIVERY',  
   });
@@ -152,7 +152,7 @@ class ApiClient {
    * @throws ApiError with status and message
    */
   async login(credentials: LoginPayload): Promise<AuthUser> {
-    const { data } = await this.client.post<AuthUser>('/delivery/login', credentials);
+    const { data } = await this.client.post<AuthUser>('/auth/login', credentials);
     
     // Store delivery ID and user data
     if (data._id) {
@@ -169,7 +169,7 @@ class ApiClient {
    * @throws ApiError with status and message
    */
   async getAvailableOrders(): Promise<Order[]> {
-    const { data } = await this.client.get<Order[]>('/delivery/get-orders');
+    const { data } = await this.client.get<Order[]>('/delivery/orders');
     return data;
   }
 
@@ -180,13 +180,10 @@ class ApiClient {
    * @returns Promise<any> - Confirmation response
    * @throws ApiError with status and message
    */
-  async acceptOrder(orderId: string, deliveryId: string): Promise<any> {
-    const { data } = await this.client.post('/delivery/added-orders', {
-      deliveryId,
-      orderId,
-    });
-    return data;
-  }
+  async acceptOrder(orderId: string): Promise<any> {
+  const { data } = await this.client.post(`/delivery/orders/${orderId}/accept`, {});
+  return data;
+}
 
   /**
    * Get accepted orders for a delivery person
@@ -194,16 +191,10 @@ class ApiClient {
    * @returns Promise<Order[]> - List of accepted orders
    * @throws ApiError with status and message
    */
-  async getAcceptedOrders(deliveryId?: string): Promise<Order[]> {
-    const id = deliveryId || this.deliveryId || (await AsyncStorage.getItem('deliveryId'));
-    if (!id) {
-      throw new ApiError(400, 'Delivery ID is required');
-    }
-    const { data } = await this.client.get<Order[]>('/delivery/get-added-orders', {
-      params: { id },
-    });
-    return data;
-  }
+  async getAcceptedOrders(): Promise<Order[]> {
+  const { data } = await this.client.get<Order[]>('/delivery/orders/me');
+  return data;
+}
 
   /**
    * Mark order as picked up
@@ -223,10 +214,15 @@ class ApiClient {
    * @returns Promise<any> - Updated order
    * @throws ApiError with status and message
    */
-  async updateOrderStatus(orderId: string, status: number): Promise<any> {
-    const { data } = await this.client.patch(`/delivery/orders/${orderId}`, { status });
-    return data;
-  }
+  async deliverOrder(orderId: string): Promise<any> {
+  const { data } = await this.client.post(`/delivery/orders/${orderId}/deliver`, {});
+  return data;
+}
+
+async failOrder(orderId: string): Promise<any> {
+  const { data } = await this.client.post(`/delivery/orders/${orderId}/fail`, {});
+  return data;
+}
 
   /**
    * Logout user

@@ -67,16 +67,16 @@ export default function DeliverySignup() {
       return;
     }
 
-    if (pincodes.length === 0) {
-      Alert.alert('Error', 'Add at least one pincode');
-      return;
-    }
+    // if (pincodes.length === 0) {
+    //   Alert.alert('Error', 'Add at least one pincode');
+    //   return;
+    // }
 
     signupMutation.mutate({
       name,
       email,
       password,
-      pincode: pincodes,
+      // pincode: pincodes,
     });
   };
 
