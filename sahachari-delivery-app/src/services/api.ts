@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, AxiosInstance } from 'axios';
+import { Platform } from 'react-native';
 
 const EXPO_API_URL = process.env.EXPO_PUBLIC_API_URL;
 const API_BASE_URL = EXPO_API_URL || 'http://localhost:3000';
@@ -64,9 +65,31 @@ class ApiClient {
   private client: AxiosInstance;
   private deliveryId: string | null = null;
 
+  private normalizeBaseUrl(url: string) {
+    let resolved = url;
+
+    // On Android emulator, 'localhost' or '127.0.0.1' refers to the emulator itself.
+    // Map to the host machine using the known emulator loopback address.
+    if (Platform.OS === 'android') {
+      if (resolved.includes('localhost')) {
+        console.warn(`[API] Rewriting baseURL for Android emulator: ${resolved} -> ${resolved.replace('localhost', '10.0.2.2')}`);
+        resolved = resolved.replace('localhost', '10.0.2.2');
+      }
+      if (resolved.includes('127.0.0.1')) {
+        console.warn(`[API] Rewriting baseURL for Android emulator: ${resolved} -> ${resolved.replace('127.0.0.1', '10.0.2.2')}`);
+        resolved = resolved.replace('127.0.0.1', '10.0.2.2');
+      }
+    }
+
+    return resolved;
+  }
+
   constructor(baseURL: string = API_BASE_URL) {
+    const resolvedBaseURL = this.normalizeBaseUrl(baseURL);
+    console.log('[API] Base URL:', resolvedBaseURL);
+
     this.client = axios.create({
-      baseURL,
+      baseURL: resolvedBaseURL,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
@@ -107,8 +130,18 @@ class ApiClient {
       },
       async (error: AxiosError) => {
         const status = error.response?.status || 0;
-        const message =
-          (error.response?.data as any)?.message || error.message || 'Unknown error occurred';
+
+        // Network-level errors (no response) often indicate connection issues — provide actionable diagnostics
+        if (!error.response) {
+          const base = this.client?.defaults?.baseURL || 'unknown';
+          const msg = `Network Error: could not reach API at ${base}. Ensure your backend is running and network is reachable. ` +
+            `If you're testing on an Android emulator, use host 10.0.2.2 instead of localhost. ` +
+            `Set EXPO_PUBLIC_API_URL to your machine's IP for physical devices.`;
+          console.error('[API Network Error]', msg, error.message);
+          throw new ApiError(0, msg, { originalMessage: error.message });
+        }
+
+        const message = (error.response?.data as any)?.message || error.message || 'Unknown error occurred';
         console.error('[API Error]', status, message);
 
         // Handle unauthorized errors
