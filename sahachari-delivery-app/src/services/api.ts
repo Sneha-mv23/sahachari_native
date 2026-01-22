@@ -1,12 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import { Platform } from 'react-native';
+import { deleteToken, getToken, setToken } from './secureToken';
 
 const EXPO_API_URL = process.env.EXPO_PUBLIC_API_URL;
-const API_BASE_URL = EXPO_API_URL || 'http://localhost:3000';
+const API_BASE_URL = EXPO_API_URL || 'http://10.0.2.2:3000';
 
 if (!EXPO_API_URL) {
-  console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env — using http://localhost:3000');
+  console.warn('⚠️ EXPO_PUBLIC_API_URL is not defined in .env — using http://10.0.2.2:3000');
 }
 
 export interface SignupPayload {
@@ -97,14 +98,24 @@ class ApiClient {
     });
 
     // Request interceptor - Add token from AsyncStorage
+    // NOTE: We intentionally skip adding Authorization on auth routes (e.g. /auth/login)
+    // because a stale or invalid token sent during login can lead the server to return 401.
     this.client.interceptors.request.use(
       async (config) => {
         try {
-          const token = await AsyncStorage.getItem('token');
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-            console.log('[API Request] Token added to headers');
+          const isAuthRoute = config.url?.startsWith?.('/auth');
+          if (isAuthRoute) {
+            console.log(`[API Request] Auth route detected, skipping Authorization header for ${config.url}`);
+          } else {
+            const token = await getToken();
+            if (token) {
+              config.headers.Authorization = `Bearer ${token}`;
+              // Mask token in logs for safety
+              const masked = typeof token === 'string' && token.length > 12 ? `${token.slice(0, 8)}...${token.slice(-4)}` : token;
+              console.log('[API Request] Token added to headers', masked);
+            }
           }
+
           // Get delivery ID for requests that need it
           const deliveryId = await AsyncStorage.getItem('deliveryId');
           if (deliveryId) {
@@ -121,6 +132,7 @@ class ApiClient {
         return Promise.reject(error);
       },
     );
+
 
     // Response interceptor
     this.client.interceptors.response.use(
@@ -141,16 +153,38 @@ class ApiClient {
           throw new ApiError(0, msg, { originalMessage: error.message });
         }
 
-        const message = (error.response?.data as any)?.message || error.message || 'Unknown error occurred';
-        console.error('[API Error]', status, message);
+        const responseBody = (error.response?.data as any) ?? null;
+        const message = responseBody?.message || error.message || 'Unknown error occurred';
+        // Provide richer debugging info: url, status, and server body
+        // eslint-disable-next-line no-console
+        console.error('[API Error]', { url: error.config?.url, status, message, body: responseBody });
 
         // Handle unauthorized errors
         if (status === 401) {
-          console.warn('[API Error] Unauthorized - clearing stored data');
+          console.warn('[API Error] 401 Unauthorized - clearing stored data');
           try {
-            await AsyncStorage.multiRemove(['token', 'deliveryUser', 'deliveryId', 'isLoggedIn']);
+            // Remove token from secure store and other user data from AsyncStorage
+            await deleteToken();
+            await AsyncStorage.multiRemove(['deliveryUser', 'deliveryId', 'isLoggedIn']);
           } catch (clearError) {
-            console.error('Error clearing AsyncStorage:', clearError);
+            console.error('Error clearing storage after 401:', clearError);
+          }
+
+          // Only emit a logout event if we actually had a token — this prevents
+          // failed login attempts (which naturally return 401) from triggering
+          // the "session expired" UI right after the user enters credentials.
+          try {
+            const existingToken = await getToken();
+            if (existingToken) {
+              const { emitLogout } = await import('./authEvents');
+              emitLogout();
+            } else {
+              // eslint-disable-next-line no-console
+              console.warn('[API] 401 occurred but no token present — skipping emitLogout');
+            }
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn('[API] emitLogout failed', e);
           }
         }
 
@@ -173,10 +207,22 @@ class ApiClient {
     if (data._id) {
       await AsyncStorage.setItem('deliveryId', data._id);
       await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
-      // Save auth token if provided by server
-      if ((data as any).token) {
-        await AsyncStorage.setItem('token', (data as any).token);
+      // Save auth token if provided by server (support common token fields)
+      const raw: any = data as any;
+      // Debug: log response body (helpful to see token field name). Remove in production if sensitive.
+      // eslint-disable-next-line no-console
+      console.log('[API Signup] response', raw);
+      const token = raw.token || raw.accessToken || raw.access_token || raw.tokens?.access || raw.tokens?.accessToken;
+      if (token) {
+        await setToken(token);
         await AsyncStorage.setItem('isLoggedIn', 'true');
+        // eslint-disable-next-line no-console
+        const masked = token.length > 12 ? `${token.slice(0, 8)}...${token.slice(-4)}` : token;
+        // eslint-disable-next-line no-console
+        console.log('[API Signup] stored token', masked);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn('[API Signup] no token found in response');
       }
     }
 
@@ -196,10 +242,22 @@ class ApiClient {
     if (data._id) {
       await AsyncStorage.setItem('deliveryId', data._id);
       await AsyncStorage.setItem('deliveryUser', JSON.stringify(data));
-      // Save auth token if provided
-      if ((data as any).token) {
-        await AsyncStorage.setItem('token', (data as any).token);
+      // Save auth token if provided by server (support common token fields)
+      const raw: any = data as any;
+      // Debug: log response body (helpful to see token field name). Remove in production if sensitive.
+      // eslint-disable-next-line no-console
+      console.log('[API Login] response', raw);
+      const token = raw.token || raw.accessToken || raw.access_token || raw.tokens?.access || raw.tokens?.accessToken;
+      if (token) {
+        await setToken(token);
         await AsyncStorage.setItem('isLoggedIn', 'true');
+        // eslint-disable-next-line no-console
+        const masked = token.length > 12 ? `${token.slice(0, 8)}...${token.slice(-4)}` : token;
+        // eslint-disable-next-line no-console
+        console.log('[API Login] stored token', masked);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn('[API Login] no token found in response');
       }
     }
 
@@ -323,8 +381,9 @@ class ApiClient {
     try {
       await this.client.post('/delivery/logout');
     } finally {
-      // Clear token and user data from AsyncStorage
-      await AsyncStorage.multiRemove(['token', 'deliveryUser', 'deliveryId', 'isLoggedIn']);
+      // Clear token from secure store and user data from AsyncStorage
+      await deleteToken();
+      await AsyncStorage.multiRemove(['deliveryUser', 'deliveryId', 'isLoggedIn']);
       this.deliveryId = null;
     }
   }

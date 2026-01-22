@@ -83,11 +83,30 @@ export default function Profile() {
     router.replace('/delivery/signup'); // 👈 goes to main index.tsx
   };
 
-  if (loading || !userData) {
+  if (loading) {
     return (
       <SafeAreaView style={[styles.container, styles.loadingContainer]} edges={['top']}>
         <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Loading profile...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]} edges={['top']}>
+        <Text style={styles.loadingText}>No profile data available.</Text>
+
+        <TouchableOpacity onPress={loadProfile} style={{ marginTop: 12 }}>
+          <Text style={{ color: Colors.primary, fontWeight: '600' }}>Retry</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push('/delivery/edit-profile')}
+          style={{ marginTop: 12 }}
+        >
+          <Text style={{ color: Colors.primary, fontWeight: '600' }}>Create / Edit Profile</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }

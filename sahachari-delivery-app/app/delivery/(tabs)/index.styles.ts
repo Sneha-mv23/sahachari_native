@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   loadingContainer: { justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 16, fontSize: 14, color: Colors.text.secondary },
@@ -71,6 +71,3 @@ const styles = StyleSheet.create({
   },
   emptyStateSubtext: { fontSize: 14, color: Colors.text.light, textAlign: 'center' },
 });
-
-
-export default styles;
